@@ -1,0 +1,6 @@
+/* Will act as a container style if needed */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
