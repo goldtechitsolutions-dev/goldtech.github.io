@@ -1088,8 +1088,8 @@ const Admin = () => {
                     <button onClick={() => setActiveTab('billing')} style={navLinkStyle(activeTab === 'billing')}>
                         <DollarSign size={18} /> Payroll & Billing
                     </button>
-                    <button onClick={() => setActiveTab('client-onboarding')} style={navLinkStyle(activeTab === 'client-onboarding')}>
-                        <UserPlus size={18} /> Client Onboarding
+                    <button onClick={() => setActiveTab('client-management')} style={navLinkStyle(activeTab === 'client-management')}>
+                        <UserPlus size={18} /> Client Management
                     </button>
 
                     <div style={{ padding: '20px 15px 10px', fontSize: '0.7rem', fontWeight: '700', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '2px' }}>Intel & Audit</div>
@@ -1159,7 +1159,7 @@ const Admin = () => {
                             {activeTab === 'chat-analytics' && 'Conversational Intelligence'}
 
                             {activeTab === 'audit' && 'Immutable Logs'}
-                            {activeTab === 'client-onboarding' && 'Client Onboarding Pipeline'}
+                            {activeTab === 'client-management' && 'Client Management Pipeline'}
                             {activeTab === 'settings' && 'Core Configuration'}
                         </h1>
                         <p style={{ color: '#64748b', fontSize: '0.95rem', fontWeight: '500' }}>Authenticated Command Session • {new Date().toLocaleDateString()}</p>
@@ -4093,7 +4093,7 @@ const Admin = () => {
 
 
 
-                {activeTab === 'client-onboarding' && (
+                {activeTab === 'client-management' && (
                     <div style={cardStyle}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap', gap: '20px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -4105,7 +4105,7 @@ const Admin = () => {
                                     <UserPlus size={22} color="#D4AF37" />
                                 </div>
                                 <div>
-                                    <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800', margin: 0 }}>Client Onboarding Pipeline</h3>
+                                    <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800', margin: 0 }}>Client Management Pipeline</h3>
                                     <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: 0 }}>Manage the intake and setup of new enterprise clients</p>
                                 </div>
                             </div>
