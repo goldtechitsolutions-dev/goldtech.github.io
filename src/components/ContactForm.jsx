@@ -14,8 +14,8 @@ const ContactForm = () => {
     const dropdownRef = useRef(null);
 
     const filteredCountries = countryCodes.filter(c =>
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.code.includes(searchTerm)
+        (c.name && c.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (c.code && c.code.includes(searchTerm))
     );
 
     useEffect(() => {

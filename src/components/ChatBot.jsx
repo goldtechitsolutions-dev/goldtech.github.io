@@ -41,8 +41,8 @@ const ChatBot = () => {
     const dropdownRef = useRef(null);
 
     const filteredCountries = countryCodes.filter(c =>
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.code.includes(searchTerm)
+        (c.name && c.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (c.code && c.code.includes(searchTerm))
     );
 
     // Animation variants for service chips reveal
@@ -269,7 +269,7 @@ const ChatBot = () => {
             switch (step) {
                 case 0: // Handshake / Greeting / Initial Intent
                     {
-                        if (['no', 'nothing', 'nope', 'nah', 'none', 'not now', 'later', 'bye', 'goodbye', 'cancel'].some(w => normalizedInput === w || normalizedInput.includes(w))) {
+                        if (normalizedInput && ['no', 'nothing', 'nope', 'nah', 'none', 'not now', 'later', 'bye', 'goodbye', 'cancel'].some(w => normalizedInput === w || normalizedInput.includes(w))) {
                             nextMessage = "Alright! Feel free to reach out whenever you're ready. Have a wonderful day!";
                             nextStep = 5;
                         } else if (['yes', 'yeah', 'yep', 'sure', 'ok', 'okay'].some(w => normalizedInput === w)) {
@@ -279,7 +279,7 @@ const ChatBot = () => {
                             nextMessage = "I'm sorry, I didn't quite catch that. Could you please clarify what you are looking for?";
                             nextStep = 0;
                         } else {
-                            if (normalizedInput === 'other' || normalizedInput.includes('other')) {
+                            if (normalizedInput && (normalizedInput === 'other' || normalizedInput.includes('other'))) {
                                 setFormData(prev => ({ ...prev, service: 'Other' }));
                                 nextMessage = "Could you please briefly explain your requirements so we can better understand your needs?";
                                 nextStep = 7;
@@ -298,7 +298,7 @@ const ChatBot = () => {
                     break;
 
                 case 1: // Captured Name
-                    if (['what', 'why', 'how', 'who', 'when', '?'].some(q => normalizedInput.includes(q)) || normalizedInput.length < 2) {
+                    if (normalizedInput && (['what', 'why', 'how', 'who', 'when', '?'].some(q => normalizedInput.includes(q)) || normalizedInput.length < 2)) {
                         nextMessage = "I need your full name to proceed. Could you please type it for me?";
                         nextStep = 1;
                     } else {
@@ -321,7 +321,7 @@ const ChatBot = () => {
 
                 case 3: // Captured Contact Details
                     {
-                        const hasEmail = lastInput.includes('@');
+                        const hasEmail = lastInput && lastInput.includes('@');
                         const hasPhone = /\d{7,}/.test(lastInput);
                         if (hasEmail && hasPhone) {
                             setFormData(prev => ({ ...prev, email: lastInput, phone: lastInput }));
@@ -382,7 +382,7 @@ const ChatBot = () => {
             }
 
             // Supplemental scroll for staggered chips
-            if (nextMessage.includes("service") || nextMessage.includes("Which area")) {
+            if (nextMessage && (nextMessage.includes("service") || nextMessage.includes("Which area"))) {
                 setTimeout(scrollToBottom, 500);
                 setTimeout(scrollToBottom, 1000);
                 setTimeout(scrollToBottom, 1500);

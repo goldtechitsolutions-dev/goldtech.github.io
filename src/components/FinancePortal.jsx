@@ -214,6 +214,7 @@ const FinancePortal = () => {
     const [projectBudgets, setProjectBudgets] = useState([]);
     const [currency, setCurrency] = useState('USD');
     const [exchangeRates, setExchangeRates] = useState({ USD: 1, INR: 83.5 });
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     // Helper for Currency Conversion
     const formatCurrency = (amount) => {
@@ -249,6 +250,8 @@ const FinancePortal = () => {
     }, []);
 
     const refreshData = async () => {
+        if (isRefreshing) return;
+        setIsRefreshing(true);
         try {
             const [
                 st, invs, vends, cards, logs, exps, subs, miles,
@@ -304,6 +307,8 @@ const FinancePortal = () => {
             });
         } catch (error) {
             console.error("FinancePortal: Error refreshing data", error);
+        } finally {
+            setIsRefreshing(false);
         }
     };
 
@@ -403,7 +408,7 @@ const FinancePortal = () => {
                 </div>
                 <h3 style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '5px' }}>{title}</h3>
                 <p style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#fff' }}>{value}</p>
-                {subtext && <p style={{ fontSize: '0.8rem', color: subtext.includes('+') ? '#86efac' : '#fca5a5' }}>{subtext}</p>}
+                {subtext && <p style={{ fontSize: '0.8rem', color: (typeof subtext === 'string' && subtext.includes('+')) ? '#86efac' : '#fca5a5' }}>{subtext}</p>}
             </GlassCard>
         </FloatingWidget>
     );

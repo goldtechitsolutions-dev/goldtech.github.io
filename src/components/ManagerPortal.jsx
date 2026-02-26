@@ -145,7 +145,7 @@ const ManagerPortal = () => {
                 <h3 style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '5px' }}>{title}</h3>
                 <p style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#fff' }}>{value}</p>
                 {trend && (
-                    <span style={{ fontSize: '0.8rem', color: trend.includes('+') ? '#86efac' : '#fca5a5' }}>
+                    <span style={{ fontSize: '0.8rem', color: (typeof trend === 'string' && trend.includes('+')) ? '#86efac' : '#fca5a5' }}>
                         {trend}
                     </span>
                 )}

@@ -1,17 +1,21 @@
+import { supabase } from '../supabaseClient';
 
 // Mock Initial Data
 const API_URL = 'http://localhost:5000/api';
 const initialCredentials = [
-    { id: 1, service: 'AWS Root Account', username: 'admin@goldtech.com', password: 'password123', category: 'Infrastructure', lastUpdated: '2023-10-20', rotationDate: '2024-01-20', strength: 'Weak' },
+    { id: 1, service: 'Supabase Project', username: 'admin@goldtech.com', password: 'password123', category: 'Infrastructure', lastUpdated: '2023-10-20', rotationDate: '2024-01-20', strength: 'Strong' },
     { id: 2, service: 'Corporate Twitter', username: '@GoldTechIT', password: 'socialPassword!', category: 'Social Media', lastUpdated: '2023-09-15', rotationDate: '2023-12-15', strength: 'Strong' },
     { id: 3, service: 'MongoDB Atlas', username: 'db_admin', password: 'dbSecurePassword#', category: 'Database', lastUpdated: '2023-10-25', rotationDate: '2024-01-25', strength: 'Strong' }
 ];
 
 const initialApplications = [
-    { id: 1, name: 'John Doe', role: 'Frontend Developer', email: 'john@example.com', phone: '123-456-7890', experience: 5, date: '2023-10-25', status: 'review pending', screening: 'Developed a high-performance trading dashboard.', resume: 'john_doe_resume.pdf' },
-    { id: 2, name: 'Jane Smith', role: 'UX Designer', email: 'jane@example.com', phone: '987-654-3210', experience: 4, date: '2023-10-24', status: 'under process', screening: 'Redesigned the user journey for a major e-commerce platform.', resume: 'jane_smith_cv.pdf' },
-    { id: 3, name: 'Mike Johnson', role: 'Backend Developer', email: 'mike@example.com', phone: '555-123-4567', experience: 6, date: '2023-10-23', status: 'rejected', screening: 'Optimized database queries, reducing response time by 50%.', resume: 'mike_backend_eng.docx' },
+    { id: 1, name: 'John Doe', role: 'Frontend Developer', email: 'john@example.com', phone: '123-456-7890', experience: 5, applied_date: '2023-10-25', appliedDate: '2023-10-25', status: 'review pending', screening: 'Developed a high-performance trading dashboard.', resume: 'john_doe_resume.pdf', resume_url: 'http://example.com/john_doe_resume.pdf' },
+    { id: 2, name: 'Jane Smith', role: 'UX Designer', email: 'jane@example.com', phone: '987-654-3210', experience: 4, applied_date: '2023-10-24', appliedDate: '2023-10-24', status: 'under process', screening: 'Redesigned the user journey for a major e-commerce platform.', resume: 'jane_smith_cv.pdf', resume_url: 'http://example.com/jane_smith_cv.pdf' },
+    { id: 3, name: 'Mike Johnson', role: 'Backend Developer', email: 'mike@example.com', phone: '555-123-4567', experience: 6, applied_date: '2023-10-23', appliedDate: '2023-10-23', status: 'rejected', screening: 'Optimized database queries, reducing response time by 50%.', resume: 'mike_backend_eng.docx', resume_url: 'http://example.com/mike_backend_eng.docx' },
 ];
+
+
+
 
 const initialQueries = [
     { id: 1, name: 'Alice Brown', email: 'alice@company.com', message: 'Project Inquiry', date: '2023-10-26', status: 'New' },
@@ -84,7 +88,7 @@ const initialInvoices = [
 ];
 
 const initialVendors = [
-    { id: 1, name: 'AWS Services', category: 'Infrastructure', contact: 'support@aws.com', status: 'Active', paymentTerms: 'Net 30' },
+    { id: 1, name: 'Supabase Services', category: 'Infrastructure', contact: 'support@supabase.io', status: 'Active', paymentTerms: 'Net 30' },
     { id: 2, name: 'WeWork Spaces', category: 'Real Estate', contact: 'admin@wework.com', status: 'Active', paymentTerms: 'Prepaid' },
     { id: 3, name: 'LinkedIn Recruiter', category: 'HR Tech', contact: 'sales@linkedin.com', status: 'Active', paymentTerms: 'Net 15' },
 ];
@@ -98,7 +102,7 @@ const initialCorpCards = [
 const initialAuditLog = [
     { id: 1, action: 'Invoice #101 Created', user: 'Fiona Finance', timestamp: '2023-11-01 10:00 AM' },
     { id: 2, action: 'Payroll Run (Oct)', user: 'Fiona Finance', timestamp: '2023-11-01 09:30 AM' },
-    { id: 3, action: 'Vendor Added: AWS', user: 'Admin User', timestamp: '2023-10-28 02:00 PM' },
+    { id: 3, action: 'Vendor Added: Supabase', user: 'Admin User', timestamp: '2023-10-28 02:00 PM' },
 ];
 
 const initialSubscriptions = [
@@ -233,8 +237,8 @@ const initialAssets = [
 ];
 
 const initialCloudBills = [
-    { id: 1, provider: 'AWS', service: 'EC2 Instances', amount: 450, date: '2024-02-01' },
-    { id: 2, provider: 'AWS', service: 'S3 Storage', amount: 120, date: '2024-02-01' },
+    { id: 1, provider: 'Supabase', service: 'PostgreSQL Database', amount: 25, date: '2024-02-01' },
+    { id: 2, provider: 'Supabase', service: 'File Storage', amount: 10, date: '2024-02-01' },
     { id: 3, provider: 'Azure', service: 'Virtual Machines', amount: 300, date: '2024-02-01' },
 ];
 
@@ -341,7 +345,7 @@ const initialReferrals = [
 const initialJobs = [
     { id: 1, title: 'Senior Frontend Developer', department: 'Engineering', location: 'Remote', type: 'Full-time', status: 'Active', applicants: 12, postedDate: '2023-10-15', experience: '5+ Years', salaryRange: '$120k - $160k', techStack: ['React', 'TypeScript', 'Tailwind'], description: 'Lead our frontend team.', roles: 'Senior Frontend Developer', responsibilities: 'Develop high-quality UI components, lead code reviews, and mentor junior devs.', education: 'B.Tech/BE in CS or related field', note: 'Priority hire for the Q1 Roadmap.', skills: 'React, Vue, Leadership' },
     { id: 2, title: 'Product Manager', department: 'Product', location: 'New York', type: 'Full-time', status: 'Active', applicants: 8, postedDate: '2023-10-20', experience: '3+ Years', salaryRange: '$110k - $140k', techStack: ['JIRA', 'Figma', 'SQL'], description: 'Drive product vision.', roles: 'Product Manager', responsibilities: 'Define product roadmap, gather requirements, and collaborate with engineering.', education: 'MBA or Equivalent', note: 'Strong communication skills required.', skills: 'Agile, JIRA, Roadmapping' },
-    { id: 3, title: 'DevOps Engineer', department: 'Engineering', location: 'Remote', type: 'Contract', status: 'Draft', applicants: 0, postedDate: '2023-10-25', experience: '4+ Years', salaryRange: '$80/hr', techStack: ['AWS', 'Docker', 'Kubernetes'], description: 'Manage cloud infrastructure and CI/CD pipelines.', roles: 'DevOps Engineer', responsibilities: 'Automate deployments, manage AWS infrastructure, and monitor system performance.', education: 'Certifications in AWS/Azure/GCP preferred', note: 'Immediate start candidate preferred.', skills: 'AWS, Docker, Jenkins' }
+    { id: 3, title: 'DevOps Engineer', department: 'Engineering', location: 'Remote', type: 'Contract', status: 'Draft', applicants: 0, postedDate: '2023-10-25', experience: '4+ Years', salaryRange: '$80/hr', techStack: ['Supabase', 'Docker', 'Kubernetes'], description: 'Manage cloud infrastructure and CI/CD pipelines.', roles: 'DevOps Engineer', responsibilities: 'Automate deployments, manage cloud infrastructure, and monitor system performance.', education: 'Certifications in Supabase/Azure/GCP preferred', note: 'Immediate start candidate preferred.', skills: 'Supabase, Docker, Jenkins' }
 ];
 
 const initialCandidates = [
@@ -378,7 +382,7 @@ const initialInfraStats = {
         { id: 3, name: 'Analytics-Engine', type: 'Compute', status: 'Warning', cpu: 85, memory: 70, region: 'eu-west-1', cost: 1500, uptime: '98.50%', latency: '45ms' }
     ],
     cloudCosts: [
-        { provider: 'AWS', amount: 3500, trend: '+5%', details: 'Increased EC2 usage' },
+        { provider: 'Supabase', amount: 35, trend: '+5%', details: 'Database & Storage' },
         { provider: 'Azure', amount: 1200, trend: '-2%', details: 'Optimized storage' },
         { provider: 'GCP', amount: 800, trend: '0%', details: 'Stable' }
     ],
@@ -562,60 +566,71 @@ const AdminService = {
         }
     },
 
+    // Helper to fetch with a timeout fallback
+    _fetchWithTimeout: async (url, options = {}, timeout = 5000) => {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeout);
+        try {
+            const response = await fetch(url, {
+                ...options,
+                signal: controller.signal
+            });
+            clearTimeout(id);
+            return response;
+        } catch (error) {
+            clearTimeout(id);
+            throw error;
+        }
+    },
+
     // --- Applications ---
     getApplications: async () => {
         try {
-            const response = await fetch(`${API_URL}/applications`);
-            if (!response.ok) throw new Error('Failed to fetch applications');
-            return await response.json();
+            const { data, error } = await supabase
+                .from('applications')
+                .select('*')
+                .order('applied_date', { ascending: false });
+
+            if (error) throw error;
+            return data.map(app => {
+                const resumeSource = app.resume_url || app.resume;
+                return {
+                    ...app,
+                    appliedDate: app.applied_date,
+                    linkedin: app.linkedin_url,
+                    portfolio: app.portfolio_url,
+                    resume_url: resumeSource,
+                    resume: app.resume || (resumeSource && !resumeSource.startsWith('http') && !resumeSource.startsWith('data:') ? resumeSource : 'resume.pdf')
+                };
+            });
+
         } catch (error) {
-            console.error(error);
+            console.error('Supabase fetch applications error, falling back:', error);
             return AdminService._getData('gt_applications', initialApplications);
         }
     },
 
     addApplication: async (formData) => {
-        try {
-            // formData should be a FormData object for file upload
-            const response = await fetch(`${API_URL}/applications`, {
-                method: 'POST',
-                body: formData
-            });
-            if (!response.ok) throw new Error('Failed to submit application');
-            return await response.json();
-        } catch (error) {
-            console.error(error);
-            throw error;
-        }
+        // Reuse addCandidate logic for consistent application handling
+        return AdminService.addCandidate(formData);
     },
 
     updateApplication: async (updatedApp) => {
-        try {
-            const response = await fetch(`${API_URL}/applications/${updatedApp.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedApp)
-            });
-            if (!response.ok) throw new Error('Failed to update application');
-            return await response.json();
-        } catch (error) {
-            console.error(error);
-            const apps = await AdminService.getApplications();
-            const newApps = apps.map(app => app.id == updatedApp.id ? updatedApp : app);
-            AdminService._saveData('gt_applications', newApps);
-            return updatedApp;
-        }
+        // Map to updateCandidate for consistency
+        return AdminService.updateCandidate(updatedApp.id, updatedApp);
     },
 
     deleteApplication: async (id) => {
         try {
-            const response = await fetch(`${API_URL}/applications/${id}`, {
-                method: 'DELETE'
-            });
-            if (!response.ok) throw new Error('Failed to delete application');
+            const { error } = await supabase
+                .from('applications')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
             return true;
         } catch (error) {
-            console.error(error);
+            console.error('Supabase delete application error, falling back:', error);
             const apps = await AdminService.getApplications();
             const newApps = apps.filter(app => app.id !== id);
             AdminService._saveData('gt_applications', newApps);
@@ -623,34 +638,67 @@ const AdminService = {
         }
     },
 
+
     // --- Core HR: Recruitment ---
+    getJobsImmediate: () => {
+        return AdminService._getData('gt_jobs', initialJobs);
+    },
     getJobs: async () => {
         try {
-            const response = await fetch(`${API_URL}/jobs`);
-            if (!response.ok) throw new Error('Failed to fetch jobs');
-            return await response.json();
+            const { data, error } = await supabase
+                .from('jobs')
+                .select('*')
+                .order('posted_date', { ascending: false });
+
+            if (error) throw error;
+            const mappedJobs = data.map(job => ({
+                ...job,
+                salaryRange: job.salary_range,
+                techStack: job.tech_stack,
+                postedDate: job.posted_date
+            }));
+
+            // Update cache silently for next "immediate" load
+            AdminService._saveData('gt_jobs', mappedJobs);
+
+            return mappedJobs;
+
         } catch (error) {
-            console.error(error);
+            console.error('Supabase fetch jobs error, falling back:', error);
             return AdminService._getData('gt_jobs', initialJobs);
         }
     },
     addJob: async (job) => {
         try {
-            const response = await fetch(`${API_URL}/jobs`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(job)
-            });
-            if (!response.ok) throw new Error('Failed to add job');
-            const newJob = await response.json();
+            const { data, error } = await supabase
+                .from('jobs')
+                .insert([{
+                    title: job.title,
+                    department: job.department,
+                    location: job.location,
+                    type: job.type,
+                    status: job.status || 'Active',
+                    experience: job.experience,
+                    salary_range: job.salaryRange,
+                    tech_stack: job.techStack,
+                    description: job.description,
+                    roles: job.roles,
+                    responsibilities: job.responsibilities,
+                    education: job.education,
+                    note: job.note,
+                    skills: job.skills
+                }])
+                .select();
+
+            if (error) throw error;
             AdminService.logAudit(`New Job Posted: ${job.title}`, 'Sarah HR');
-            return newJob;
+            return data[0];
         } catch (error) {
-            console.error(error);
+            console.error('Supabase add job error, falling back:', error);
             const jobs = await AdminService.getJobs();
             const newJob = {
                 ...job,
-                id: jobs.length + 1,
+                id: Date.now(),
                 status: 'Active',
                 applicants: 0,
                 postedDate: new Date().toISOString().split('T')[0]
@@ -663,17 +711,32 @@ const AdminService = {
     },
     updateJob: async (updatedJob) => {
         try {
-            const response = await fetch(`${API_URL}/jobs/${updatedJob.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedJob)
-            });
-            if (!response.ok) throw new Error('Failed to update job');
-            const data = await response.json();
+            const { data, error } = await supabase
+                .from('jobs')
+                .update({
+                    title: updatedJob.title,
+                    department: updatedJob.department,
+                    location: updatedJob.location,
+                    type: updatedJob.type,
+                    status: updatedJob.status,
+                    experience: updatedJob.experience,
+                    salary_range: updatedJob.salaryRange,
+                    tech_stack: updatedJob.techStack,
+                    description: updatedJob.description,
+                    roles: updatedJob.roles,
+                    responsibilities: updatedJob.responsibilities,
+                    education: updatedJob.education,
+                    note: updatedJob.note,
+                    skills: updatedJob.skills
+                })
+                .eq('id', updatedJob.id)
+                .select();
+
+            if (error) throw error;
             AdminService.logAudit(`Job Updated: ${updatedJob.title}`, 'Sarah HR');
-            return data;
+            return data[0];
         } catch (error) {
-            console.error(error);
+            console.error('Supabase update job error, falling back:', error);
             const jobs = await AdminService.getJobs();
             const newJobs = jobs.map(j => j.id == updatedJob.id ? updatedJob : j);
             AdminService._saveData('gt_jobs', newJobs);
@@ -681,16 +744,19 @@ const AdminService = {
             return newJobs;
         }
     },
+
     deleteJob: async (id) => {
         try {
-            const response = await fetch(`${API_URL}/jobs/${id}`, {
-                method: 'DELETE'
-            });
-            if (!response.ok) throw new Error('Failed to delete job');
+            const { error } = await supabase
+                .from('jobs')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
             AdminService.logAudit(`Job Deleted: ID ${id}`, 'Sarah HR');
             return true;
         } catch (error) {
-            console.error(error);
+            console.error('Supabase delete job error, falling back:', error);
             const jobs = await AdminService.getJobs();
             const newJobs = jobs.filter(j => j.id !== id);
             AdminService._saveData('gt_jobs', newJobs);
@@ -699,26 +765,36 @@ const AdminService = {
         }
     },
     getCandidates: async () => {
-        try {
-            const response = await fetch(`${API_URL}/applications`); // Candidates are in applications table usually or have same route
-            if (!response.ok) throw new Error('Failed to fetch candidates');
-            return await response.json();
-        } catch (error) {
-            console.error(error);
-            return AdminService._getData('gt_candidates', initialCandidates);
-        }
+        return AdminService.getApplications();
     },
     updateCandidate: async (id, updatedCandidate) => {
         try {
-            const response = await fetch(`${API_URL}/applications/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedCandidate)
-            });
-            if (!response.ok) throw new Error('Failed to update candidate');
-            return await response.json();
+            // Map fields back to Supabase schema
+            const dbData = {};
+            if (updatedCandidate.name !== undefined) dbData.name = updatedCandidate.name;
+            if (updatedCandidate.role !== undefined) dbData.role = updatedCandidate.role;
+            if (updatedCandidate.email !== undefined) dbData.email = updatedCandidate.email;
+            if (updatedCandidate.phone !== undefined) dbData.phone = updatedCandidate.phone;
+            if (updatedCandidate.experience !== undefined) dbData.experience = parseInt(updatedCandidate.experience);
+            if (updatedCandidate.screening !== undefined) dbData.screening = updatedCandidate.screening;
+            if (updatedCandidate.stage !== undefined) dbData.stage = updatedCandidate.stage;
+            if (updatedCandidate.linkedin !== undefined) dbData.linkedin_url = updatedCandidate.linkedin;
+            if (updatedCandidate.portfolio !== undefined) dbData.portfolio_url = updatedCandidate.portfolio;
+            if (updatedCandidate.resume_url !== undefined) dbData.resume_url = updatedCandidate.resume_url;
+            if (updatedCandidate.source !== undefined) dbData.source = updatedCandidate.source;
+            if (updatedCandidate.appliedDate !== undefined) dbData.applied_date = updatedCandidate.appliedDate;
+
+            const { data, error } = await supabase
+                .from('applications')
+                .update(dbData)
+                .eq('id', id)
+                .select();
+
+
+            if (error) throw error;
+            return data[0];
         } catch (error) {
-            console.error(error);
+            console.error('Supabase update candidate error, falling back:', error);
             const candidates = await AdminService.getCandidates();
             const index = candidates.findIndex(c => c.id == id);
             if (index !== -1) {
@@ -729,50 +805,123 @@ const AdminService = {
             return null;
         }
     },
+
     // Keep for backward compatibility if needed, but updated to use updateCandidate logic
     updateCandidateStatus: async (id, stage) => {
         return await AdminService.updateCandidate(id, { stage });
     },
     addCandidate: async (candidate) => {
         try {
-            // Check if we have a file (for API/S3) or if it's just plain data
-            let responseData;
+            let candidateData = candidate;
+            let resumeUrl = null;
+
             if (candidate instanceof FormData) {
-                const response = await fetch(`${API_URL}/applications`, {
-                    method: 'POST',
-                    body: candidate
-                });
-                if (!response.ok) throw new Error('Failed to add candidate');
-                responseData = await response.json();
-            } else {
-                const response = await fetch(`${API_URL}/applications`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(candidate)
-                });
-                if (!response.ok) throw new Error('Failed to add candidate');
-                responseData = await response.json();
+                candidateData = Object.fromEntries(candidate.entries());
+                const resumeFile = candidate.get('resume');
+
+                if (resumeFile && resumeFile instanceof File) {
+                    const fileExt = resumeFile.name.split('.').pop();
+                    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+                    const filePath = `${fileName}`;
+
+                    const { error: uploadError } = await supabase.storage
+                        .from('resumes')
+                        .upload(filePath, resumeFile, {
+                            contentType: resumeFile.type,
+                            upsert: true
+                        });
+
+                    if (uploadError) {
+                        console.error("Storage upload error (Bucket/Policy issue?):", uploadError);
+
+                        // SELF-HEALING FALLBACK: Convert to Data URI so resume is still accessible
+                        // Limit fallback to 1.5MB to prevent DB performance issues
+                        const MAX_FALLBACK_SIZE = 1.5 * 1024 * 1024; // 1.5MB
+
+                        if (resumeFile.size <= MAX_FALLBACK_SIZE) {
+                            try {
+                                const reader = new FileReader();
+                                const base64Promise = new Promise((resolve) => {
+                                    reader.onloadend = () => resolve(reader.result);
+                                    reader.readAsDataURL(resumeFile);
+                                });
+                                candidateData.resume_url = await base64Promise;
+                                console.log(`Self-healing: stored resume as Data URI (${(resumeFile.size / 1024).toFixed(1)}KB) due to upload failure.`);
+                            } catch (readErr) {
+                                console.error("Failed to read file for fallback:", readErr);
+                                candidateData.resume_url = resumeFile.name;
+                            }
+                        } else {
+                            console.warn(`File too large (${(resumeFile.size / (1024 * 1024)).toFixed(1)}MB) for Base64 fallback. Storage policy must be fixed.`);
+                            candidateData.resume_url = resumeFile.name;
+                        }
+                    } else {
+                        const { data: { publicUrl } } = supabase.storage
+                            .from('resumes')
+                            .getPublicUrl(filePath);
+                        resumeUrl = publicUrl;
+                        candidateData.resume_url = resumeUrl;
+                    }
+                }
             }
-            return responseData;
+
+            // Map fields to Supabase schema
+            const dbData = {
+                name: candidateData.name,
+                role: candidateData.role,
+                email: candidateData.email,
+                phone: candidateData.phone,
+                experience: isNaN(parseInt(candidateData.experience)) ? 0 : parseInt(candidateData.experience),
+                screening: candidateData.screening,
+                linkedin_url: candidateData.linkedin,
+                portfolio_url: candidateData.portfolio,
+                resume_url: candidateData.resume_url || candidateData.resume?.name || candidateData.resume,
+                resume: candidateData.resume?.name || candidateData.resume || (candidateData.resume_url && !candidateData.resume_url.startsWith('http') && !candidateData.resume_url.startsWith('data:') ? candidateData.resume_url : 'resume.pdf')
+            };
+
+            const { data, error } = await supabase
+                .from('applications')
+                .insert([dbData])
+                .select();
+
+            if (error) throw error;
+            const newApp = data[0];
+            return {
+                ...newApp,
+                appliedDate: newApp.applied_date,
+                linkedin: newApp.linkedin_url,
+                portfolio: newApp.portfolio_url,
+                resume_url: newApp.resume_url
+            };
+
         } catch (error) {
-            console.error("API error, falling back to local storage:", error);
-            const candidates = AdminService.getCandidates();
+            console.error("Candidate submission failed. Error context:", error);
+
+
+            let candidateData = candidate;
+            if (candidate instanceof FormData) {
+                candidateData = Object.fromEntries(candidate.entries());
+                if (candidateData.resume && candidateData.resume instanceof File) {
+                    candidateData.resume = candidateData.resume.name;
+                }
+            }
+
+            const candidates = await AdminService.getCandidates();
             const newCandidate = {
-                ...candidate,
+                ...candidateData,
                 id: Date.now(),
                 stage: 'review pending',
-                appliedDate: new Date().toISOString().split('T')[0],
+                applied_date: new Date().toISOString().split('T')[0],
                 score: Math.floor(Math.random() * (95 - 60 + 1)) + 60,
                 interviewScores: {}
             };
             const newList = [newCandidate, ...candidates];
             AdminService._saveData('gt_candidates', newList);
 
-            // Also add to applications for dashboard visibility
-            const currentApps = AdminService.getApplications();
+            const currentApps = await AdminService.getApplications();
             const newAppEntry = {
                 ...newCandidate,
-                date: newCandidate.appliedDate,
+                date: newCandidate.applied_date,
                 status: 'review pending'
             };
             AdminService._saveData('gt_applications', [newAppEntry, ...currentApps]);
@@ -833,21 +982,40 @@ const AdminService = {
     // --- Queries ---
     getQueries: async () => {
         try {
-            const response = await fetch(`${API_URL}/queries`);
-            if (!response.ok) throw new Error('Failed to fetch queries');
-            return await response.json();
+            const { data, error } = await supabase
+                .from('queries')
+                .select('*')
+                .order('date', { ascending: false });
+
+            if (error) throw error;
+            return data;
         } catch (error) {
-            console.error(error);
+            console.error('Supabase fetch queries error, falling back:', error);
             return AdminService._getData('gt_queries', initialQueries);
         }
     },
 
     async addQuery(query) {
-        const queries = await AdminService.getQueries();
-        const newQuery = { ...query, id: Date.now(), status: 'New', date: new Date().toISOString().split('T')[0] };
-        const newQueries = [newQuery, ...queries];
-        AdminService._saveData('gt_queries', newQueries);
-        return newQuery;
+        try {
+            const { data, error } = await supabase
+                .from('queries')
+                .insert([{
+                    name: query.name,
+                    email: query.email,
+                    message: query.message
+                }])
+                .select();
+
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            console.error('Supabase error, falling back to local storage:', error);
+            const queries = await AdminService.getQueries();
+            const newQuery = { ...query, id: Date.now(), status: 'New', date: new Date().toISOString().split('T')[0] };
+            const newQueries = [newQuery, ...queries];
+            AdminService._saveData('gt_queries', newQueries);
+            return newQuery;
+        }
     },
 
     async updateQuery(updatedQuery) {
@@ -867,7 +1035,7 @@ const AdminService = {
     // --- Meetings ---
     getMeetings: async () => {
         try {
-            const response = await fetch(`${API_URL}/meetings`);
+            const response = await AdminService._fetchWithTimeout(`${API_URL}/meetings`);
             if (!response.ok) throw new Error('Failed to fetch meetings');
             return await response.json();
         } catch (error) {
@@ -914,7 +1082,7 @@ const AdminService = {
     // --- User Management ---
     getUsers: async () => {
         try {
-            const response = await fetch(`${API_URL}/users`);
+            const response = await AdminService._fetchWithTimeout(`${API_URL}/users`);
             if (!response.ok) throw new Error('Failed to fetch users');
             return await response.json();
         } catch (error) {
@@ -1104,7 +1272,7 @@ const AdminService = {
             { id: 2, name: 'Payment Gateway', status: 'Online', version: 'v2.0.1', uptime: '99.95%' },
             { id: 3, name: 'Notification Service', status: 'Degraded', version: 'v1.0.5', uptime: '98.5%' },
             { id: 4, name: 'Database Cluster', status: 'Online', version: 'PostgreSQL 14', uptime: '99.99%' },
-            { id: 5, name: 'Storage Service', status: 'Online', version: 'S3 Compatible', uptime: '99.9%' }
+            { id: 5, name: 'Storage Service', status: 'Online', version: 'Supabase Storage', uptime: '99.9%' }
         ];
     },
 
@@ -1127,7 +1295,7 @@ const AdminService = {
 
     updateLeaveRequest: async (updatedLeave) => {
         try {
-            const response = await fetch(`${API_URL}/leaves/${updatedLeave.id}`, {
+            const response = await AdminService._fetchWithTimeout(`${API_URL}/leaves/${updatedLeave.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updatedLeave)
@@ -1146,7 +1314,7 @@ const AdminService = {
 
     addLeaveRequest: async (newLeave) => {
         try {
-            const response = await fetch(`${API_URL}/leaves`, {
+            const response = await AdminService._fetchWithTimeout(`${API_URL}/leaves`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newLeave)
@@ -1622,19 +1790,21 @@ const AdminService = {
         ]);
 
         users.forEach(u => {
-            if (u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)) {
+            if (u.name && typeof u.name === 'string' && u.name.toLowerCase().includes(q) ||
+                u.email && typeof u.email === 'string' && u.email.toLowerCase().includes(q)) {
                 results.push({ type: 'User', title: u.name, subtitle: u.role, link: '/admin/users' });
             }
         });
 
         invoices.forEach(i => {
-            if (i.client.toLowerCase().includes(q) || i.id.toString().includes(q)) {
+            if (i.client && typeof i.client === 'string' && i.client.toLowerCase().includes(q) ||
+                i.id && i.id.toString().includes(q)) {
                 results.push({ type: 'Invoice', title: `INV-${i.id}`, subtitle: i.client, link: '/finance/invoices' });
             }
         });
 
         projects.forEach(p => {
-            if (p.name.toLowerCase().includes(q)) {
+            if (p.name && typeof p.name === 'string' && p.name.toLowerCase().includes(q)) {
                 results.push({ type: 'Project', title: p.name, subtitle: p.status, link: '/projects' });
             }
         });

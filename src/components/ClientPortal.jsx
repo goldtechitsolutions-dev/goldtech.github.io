@@ -91,6 +91,7 @@ const ClientPortal = () => {
     const [auditLog, setAuditLog] = useState([]);
     const [invoices, setInvoices] = useState([]);
     const [pendingInvoicesTotal, setPendingInvoicesTotal] = useState(0);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     // UI Toggles
     const [mfaEnabled, setMfaEnabled] = useState(false);
@@ -101,26 +102,32 @@ const ClientPortal = () => {
     }, []);
 
     const refreshData = async () => {
-        // Safe check for new methods to avoid crashing if service update isn't hot-reloaded yet
-        if (AdminService.getClientDashboardData) {
-            const [data, board, docs, clAssets, logs, invs] = await Promise.all([
-                AdminService.getClientDashboardData(clientName),
-                AdminService.getProjectBoard(clientName),
-                AdminService.getClientDocuments ? AdminService.getClientDocuments(clientName) : Promise.resolve([]),
-                AdminService.getClientAssets ? AdminService.getClientAssets(clientName) : Promise.resolve([]),
-                AdminService.getClientAuditLog ? AdminService.getClientAuditLog(clientName) : Promise.resolve([]),
-                AdminService.getClientInvoices ? AdminService.getClientInvoices(clientName) : Promise.resolve([])
-            ]);
+        if (isRefreshing) return;
+        setIsRefreshing(true);
+        try {
+            // Safe check for new methods to avoid crashing if service update isn't hot-reloaded yet
+            if (AdminService.getClientDashboardData) {
+                const [data, board, docs, clAssets, logs, invs] = await Promise.all([
+                    AdminService.getClientDashboardData(clientName),
+                    AdminService.getProjectBoard(clientName),
+                    AdminService.getClientDocuments ? AdminService.getClientDocuments(clientName) : Promise.resolve([]),
+                    AdminService.getClientAssets ? AdminService.getClientAssets(clientName) : Promise.resolve([]),
+                    AdminService.getClientAuditLog ? AdminService.getClientAuditLog(clientName) : Promise.resolve([]),
+                    AdminService.getClientInvoices ? AdminService.getClientInvoices(clientName) : Promise.resolve([])
+                ]);
 
-            setDashboardData(data);
-            setProjectBoard(board);
-            setDocuments(docs || []);
-            setAssets(clAssets || []);
-            setAuditLog(logs || []);
-            setInvoices(invs || []);
+                setDashboardData(data);
+                setProjectBoard(board);
+                setDocuments(docs || []);
+                setAssets(clAssets || []);
+                setAuditLog(logs || []);
+                setInvoices(invs || []);
 
-            const total = (invs || []).reduce((acc, i) => acc + (i.status === 'Pending' ? i.total : 0), 0);
-            setPendingInvoicesTotal(total);
+                const total = (invs || []).reduce((acc, i) => acc + (i.status === 'Pending' ? i.total : 0), 0);
+                setPendingInvoicesTotal(total);
+            }
+        } finally {
+            setIsRefreshing(false);
         }
     };
 

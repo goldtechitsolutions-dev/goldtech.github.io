@@ -49,7 +49,7 @@ const Admin = () => {
         role: 'All',
         source: 'All'
     });
-    const [recruitmentSort, setRecruitmentSort] = useState({ key: 'name', direction: 'asc' });
+    const [recruitmentSort, setRecruitmentSort] = useState({ key: 'appliedDate', direction: 'desc' });
 
     const processedCandidates = useMemo(() => {
         let result = [...candidates];
@@ -58,11 +58,12 @@ const Admin = () => {
         if (recruitmentFilters.search) {
             const query = recruitmentFilters.search.toLowerCase();
             result = result.filter(c =>
-                c.name.toLowerCase().includes(query) ||
-                c.email.toLowerCase().includes(query) ||
-                c.role.toLowerCase().includes(query)
+                (c.name && c.name.toLowerCase().includes(query)) ||
+                (c.email && c.email.toLowerCase().includes(query)) ||
+                (c.role && c.role.toLowerCase().includes(query))
             );
         }
+
 
         if (recruitmentFilters.stage !== 'All') {
             result = result.filter(c => c.stage === recruitmentFilters.stage);
@@ -176,11 +177,12 @@ const Admin = () => {
     }, [isLoggedIn]);
 
     const refreshData = async () => {
+        if (isRefreshing) return;
         setIsRefreshing(true);
         try {
             // Use Promise.all for parallel fetching
             const [
-                apps, qs, meets, usrs, rls, cnds, jbs,
+                apps, qs, meets, usrs, rls, jbs,
                 health, services, logs, infra, cLogs, keys, jit, audits, creds, sec,
                 metrics, proj, fin, info
             ] = await Promise.all([
@@ -189,19 +191,18 @@ const Admin = () => {
                 AdminService.getMeetings(),
                 AdminService.getUsers(),
                 AdminService.getRoles(),
-                AdminService.getCandidates(),
                 AdminService.getJobs(),
                 AdminService.getSystemHealth(),
                 AdminService.getServiceStatus(),
                 AdminService.getRecentLogs(),
-                AdminService.getInfrastructureDetails(),
-                AdminService.getComplianceLogs(),
-                AdminService.getApiKeys(),
-                AdminService.getJitRequests(),
+                AdminService.getInfrastructureDetails ? AdminService.getInfrastructureDetails() : Promise.resolve({ servers: [], cloudCosts: [], domains: [] }),
+                AdminService.getComplianceLogs ? AdminService.getComplianceLogs() : Promise.resolve([]),
+                AdminService.getApiKeys ? AdminService.getApiKeys() : Promise.resolve([]),
+                AdminService.getJitRequests ? AdminService.getJitRequests() : Promise.resolve([]),
                 AdminService.getAuditLog(),
                 AdminService.getCredentials(),
-                AdminService.getSecurityHealthSummary(),
-                AdminService.getIndustryMetrics(),
+                AdminService.getSecurityHealthSummary ? AdminService.getSecurityHealthSummary() : Promise.resolve({}),
+                AdminService.getIndustryMetrics ? AdminService.getIndustryMetrics() : Promise.resolve({}),
                 AdminService.getProjectHealth(),
                 AdminService.getFinancialStats(),
                 AdminService.getCompanyInfo()
@@ -212,7 +213,7 @@ const Admin = () => {
             setMeetings(meets || []);
             setUsers(usrs || []);
             setRoles(rls || []);
-            setCandidates(cnds || []);
+            setCandidates(apps || []); // Candidates are same as Applications
             setJobs(jbs || []);
             setSystemHealth(health || { cpu: 0, memory: 0, disk: 0, uptime: '0m' });
             setServiceStatus(services || []);
@@ -491,36 +492,60 @@ const Admin = () => {
         alert('Information copied to clipboard!');
     };
 
-    const handleDownloadResume = (base64Data, filename) => {
+    const handleDownloadResume = (sourceOrUrl, filename) => {
         try {
-            if (!base64Data || !base64Data.startsWith('data:')) {
-                alert("This resume record contains no file data (Legacy Entry).");
+            if (!sourceOrUrl) {
+                alert("This resume record contains no file data.");
                 return;
             }
-            const [header, content] = base64Data.split(',');
-            const mime = header.match(/:(.*?);/)[1];
-            const bstr = atob(content);
-            let n = bstr.length;
-            const u8arr = new Uint8Array(n);
-            while (n--) {
-                u8arr[n] = bstr.charCodeAt(n);
+
+            // sourceOrUrl could be a URL, a data URI, or just a filename
+            const sourceStr = String(sourceOrUrl);
+
+            // Check if it's a URL
+            if (sourceStr.startsWith('http')) {
+                const link = document.createElement('a');
+                link.href = sourceStr;
+                link.target = '_blank';
+                link.download = filename || 'resume.pdf';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                return;
             }
-            const blob = new Blob([u8arr], { type: mime });
-            const url = URL.createObjectURL(blob);
 
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename || 'resume.pdf';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // Check if it's a Data URI
+            if (sourceStr.startsWith('data:')) {
+                const [header, content] = sourceStr.split(',');
+                const mime = header.match(/:(.*?);/)[1];
+                const bstr = atob(content);
+                let n = bstr.length;
+                const u8arr = new Uint8Array(n);
+                while (n--) {
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                const blob = new Blob([u8arr], { type: mime });
+                const url = URL.createObjectURL(blob);
 
-            setTimeout(() => URL.revokeObjectURL(url), 100);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename || 'resume.pdf';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                setTimeout(() => URL.revokeObjectURL(url), 100);
+                return;
+            }
+
+            // If it's just a filename or random string, we can't do much but show info
+            alert(`Record contains a file reference: "${sourceStr}". Only full file data or Supabase links can be opened.`);
         } catch (e) {
             console.error("Download error:", e);
             alert("Failed to process resume file. The file might be corrupted or too large.");
         }
     };
+
 
     // --- Password Vault Handlers ---
     const handleOpenCredentialModal = (cred = null) => {
@@ -1297,6 +1322,7 @@ const Admin = () => {
                                     <option value="name" style={{ background: '#1a1a1a', color: '#fff' }}>Sort by Name</option>
                                     <option value="role" style={{ background: '#1a1a1a', color: '#fff' }}>Sort by Role</option>
                                     <option value="stage" style={{ background: '#1a1a1a', color: '#fff' }}>Sort by Stage</option>
+                                    <option value="appliedDate" style={{ background: '#1a1a1a', color: '#fff' }}>Sort by Time</option>
                                 </select>
                                 <button
                                     onClick={() => setRecruitmentSort({ ...recruitmentSort, direction: recruitmentSort.direction === 'asc' ? 'desc' : 'asc' })}
@@ -1311,7 +1337,7 @@ const Admin = () => {
                             <button
                                 onClick={() => {
                                     setRecruitmentFilters({ search: '', stage: 'All', role: 'All', source: 'All' });
-                                    setRecruitmentSort({ key: 'name', direction: 'asc' });
+                                    setRecruitmentSort({ key: 'appliedDate', direction: 'desc' });
                                 }}
                                 style={{ ...inputStyle, background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.2)', fontWeight: 'bold', fontSize: '0.75rem', letterSpacing: '0.5px' }}
                             >
@@ -1327,7 +1353,7 @@ const Admin = () => {
                                         <th style={thStyle}>Candidate Identity</th>
                                         <th style={thStyle}>Target Role</th>
                                         <th style={thStyle}>Recruitment Stage</th>
-                                        <th style={thStyle}>Application Source</th>
+                                        <th style={thStyle}>Message</th>
                                         <th style={thStyle}>Pipeline Actions</th>
                                     </tr>
                                 </thead>
@@ -1352,18 +1378,17 @@ const Admin = () => {
                                                 </span>
                                             </td>
                                             <td style={tdStyle}>
-                                                <span style={{
-                                                    fontSize: '0.7rem',
-                                                    background: 'rgba(255, 255, 255, 0.05)',
-                                                    color: '#94a3b8',
-                                                    padding: '2px 8px',
-                                                    borderRadius: '4px',
-                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                    fontWeight: '700',
-                                                    textTransform: 'uppercase'
-                                                }}>
-                                                    {candidate.source || 'Career Page'}
-                                                </span>
+                                                <div style={{
+                                                    fontSize: '0.85rem',
+                                                    color: '#cbd5e1',
+                                                    maxWidth: '200px',
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    fontWeight: '500'
+                                                }} title={candidate.screening}>
+                                                    {candidate.screening || 'No message provided'}
+                                                </div>
                                             </td>
                                             <td style={tdStyle}>
                                                 <div style={{ display: 'flex', gap: '10px' }}>
@@ -3255,23 +3280,24 @@ const Admin = () => {
                                                             <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '10px', fontSize: '1rem', color: '#f8fafc' }}>
                                                                 <span style={{ color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', fontSize: '0.8rem' }}>Resume:</span>
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                                    <span style={{ fontWeight: '500', fontSize: '0.9rem', color: '#cbd5e1' }}>{selectedItem.resume || 'Not Provided'}</span>
-                                                                    {selectedItem.resumeFile ? (
+                                                                    <span style={{ fontWeight: '500', fontSize: '0.9rem', color: '#cbd5e1' }}>{selectedItem.resume_url ? (selectedItem.resume_url.startsWith('http') ? 'Supabase Storage' : selectedItem.resume_url) : (selectedItem.resume || 'Not Provided')}</span>
+                                                                    {(selectedItem.resume_url?.startsWith('http') || selectedItem.resume_url?.startsWith('data:') || selectedItem.resume?.startsWith('data:') || selectedItem.resume?.startsWith('http')) ? (
                                                                         <button
-                                                                            onClick={() => handleDownloadResume(selectedItem.resumeFile, selectedItem.resume)}
+                                                                            onClick={() => handleDownloadResume(selectedItem.resume_url || selectedItem.resume, selectedItem.resume || 'resume.pdf')}
                                                                             style={{ padding: '4px 8px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid #10b981', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 'bold' }}
                                                                         >
                                                                             OPEN SOURCE FILE
                                                                         </button>
-                                                                    ) : selectedItem.resume && (
+                                                                    ) : (selectedItem.resume && (
                                                                         <button
                                                                             style={{ padding: '4px 8px', background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', border: '1px solid #D4AF37', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 'bold' }}
-                                                                            onClick={() => alert(`Legacy file format: ${selectedItem.resume}. Only new uploads can be viewed.`)}
+                                                                            onClick={() => alert(`RESUME DATA SUMMARY:\n\nField 'resume': ${selectedItem.resume || 'EMPTY'}\nField 'resume_url': ${selectedItem.resume_url ? (selectedItem.resume_url.startsWith('data:') ? 'DATA_URI_FOUND' : (selectedItem.resume_url.startsWith('http') ? 'URL_FOUND' : selectedItem.resume_url)) : 'EMPTY'}\n\nOnly valid URLs or Data URIs can be opened.`)}
                                                                         >
                                                                             INFO
                                                                         </button>
-                                                                    )}
+                                                                    ))}
                                                                 </div>
+
                                                             </div>
                                                         </>
                                                     )}
@@ -3896,8 +3922,8 @@ const Admin = () => {
                                     <tbody>
                                         {credentials
                                             .filter(c => (vaultCategory === 'All' || c.category === vaultCategory) &&
-                                                (c.service.toLowerCase().includes(vaultSearch.toLowerCase()) ||
-                                                    c.username.toLowerCase().includes(vaultSearch.toLowerCase())))
+                                                ((c.service && c.service.toLowerCase().includes(vaultSearch.toLowerCase())) ||
+                                                    (c.username && c.username.toLowerCase().includes(vaultSearch.toLowerCase()))))
                                             .map((cred) => {
                                                 const strength = AdminService.checkPasswordStrength(cred.password);
                                                 return (
@@ -4085,11 +4111,12 @@ const statusBadge = (status) => {
         color = '#3b82f6';
         border = 'rgba(59, 130, 246, 0.2)';
     }
-    if (status.includes('Service Inquiry') || status === 'Reviewed' || status === 'Replied' || status === 'Completed' || status === 'Confirmed' || status === 'hired' || status.includes('interview')) {
+    if (status && typeof status === 'string' && (status.includes('Service Inquiry') || status === 'Reviewed' || status === 'Replied' || status === 'Completed' || status === 'Confirmed' || status === 'hired' || status.includes('interview'))) {
         bg = 'rgba(16, 185, 129, 0.1)';
         color = '#10b981';
         border = 'rgba(16, 185, 129, 0.2)';
     }
+
     if (status === 'Rejected' || status === 'rejected') {
         bg = 'rgba(225, 29, 72, 0.1)';
         color = '#f43f5e';

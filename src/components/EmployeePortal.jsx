@@ -93,6 +93,7 @@ const EmployeePortal = () => {
     const [socialFeed, setSocialFeed] = useState([]);
     const [devTools, setDevTools] = useState({ jira: [], cloudCredentials: [] });
     const [referrals, setReferrals] = useState([]);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     // Leave Form State
     const [showLeaveForm, setShowLeaveForm] = useState(false);
@@ -119,46 +120,54 @@ const EmployeePortal = () => {
     }, []);
 
     const refreshData = async (userId) => {
-        const [
-            tsks,
-            allLv,
-            wfh,
-            hols,
-            payroll,
-            allLearn,
-            lms,
-            budget,
-            okrList,
-            social,
-            tools,
-            refList
-        ] = await Promise.all([
-            AdminService.getTasks(userId),
-            AdminService.getLeaveRequests(),
-            AdminService.getWorkFromHome(userId),
-            AdminService.getHolidays(),
-            AdminService.getPayrollHistory(userId),
-            AdminService.getLearningProgress(),
-            AdminService.getLMSCourses(),
-            AdminService.getLearningBudget(userId),
-            AdminService.getOKRs(userId),
-            AdminService.getSocialFeed(),
-            AdminService.getDevToolsData(),
-            AdminService.getReferrals(userId)
-        ]);
+        if (isRefreshing) return;
+        setIsRefreshing(true);
+        try {
+            const [
+                tsks,
+                allLv,
+                wfh,
+                hols,
+                payroll,
+                allLearn,
+                lms,
+                budget,
+                okrList,
+                social,
+                tools,
+                refList
+            ] = await Promise.all([
+                AdminService.getTasks(userId),
+                AdminService.getLeaveRequests(),
+                AdminService.getWorkFromHome(userId),
+                AdminService.getHolidays(),
+                AdminService.getPayrollHistory(userId),
+                AdminService.getLearningProgress ? AdminService.getLearningProgress() : Promise.resolve([]),
+                AdminService.getLMSCourses ? AdminService.getLMSCourses() : Promise.resolve([]),
+                AdminService.getLearningBudget ? AdminService.getLearningBudget(userId) : Promise.resolve(null),
+                AdminService.getOKRs ? AdminService.getOKRs(userId) : Promise.resolve([]),
+                AdminService.getSocialFeed ? AdminService.getSocialFeed() : Promise.resolve([]),
+                AdminService.getDevToolsData ? AdminService.getDevToolsData() : Promise.resolve({ jira: [], cloudCredentials: [] }),
+                AdminService.getReferrals ? AdminService.getReferrals(userId) : Promise.resolve([])
+            ]);
 
-        setTasks(tsks || []);
-        setLeaves((allLv || []).filter(l => l.name === 'John Dev'));
-        setWfhRequest(wfh || []);
-        setHolidays(hols || []);
-        setPayrollHistory(payroll || []);
-        setLearning((allLearn || []).filter(l => l.userId === userId));
-        setLmsCourses(lms || []);
-        setLearningBudget(budget);
-        setOkrs(okrList || []);
-        setSocialFeed(social || []);
-        setDevTools(tools || { jira: [], cloudCredentials: [] });
-        setReferrals(refList || []);
+            setTasks(tsks || []);
+            setLeaves((allLv || []).filter(l => l.name === 'John Dev'));
+            setWfhRequest(wfh || []);
+            setHolidays(hols || []);
+            setPayrollHistory(payroll || []);
+            setLearning((allLearn || []).filter(l => l.userId === userId));
+            setLmsCourses(lms || []);
+            setLearningBudget(budget);
+            setOkrs(okrList || []);
+            setSocialFeed(social || []);
+            setDevTools(tools || { jira: [], cloudCredentials: [] });
+            setReferrals(refList || []);
+        } catch (error) {
+            console.error("EmployeePortal: Error refreshing data", error);
+        } finally {
+            setIsRefreshing(false);
+        }
     };
 
     const handleLogout = () => {

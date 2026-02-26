@@ -99,6 +99,7 @@ const HRPortal = () => {
     const [documents, setDocuments] = useState([]);
     const [assets, setAssets] = useState([]);
     const [surveys, setSurveys] = useState([]);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     // Leave Form State
     const [showLeaveForm, setShowLeaveForm] = useState(false);
@@ -115,9 +116,11 @@ const HRPortal = () => {
     }, []);
 
     const refreshData = async () => {
+        if (isRefreshing) return;
+        setIsRefreshing(true);
         try {
             const [
-                usrs, apps, lvrs, pay, org, sec, lrn, jbs, cnds, metrics, onb, docs, asts, svys
+                usrs, apps, lvrs, pay, org, sec, lrn, jbs, onb, docs, asts, svys
             ] = await Promise.all([
                 AdminService.getUsers(),
                 AdminService.getApplications(),
@@ -127,8 +130,6 @@ const HRPortal = () => {
                 AdminService.getSecurityHealth ? AdminService.getSecurityHealth() : [],
                 AdminService.getLearningProgress ? AdminService.getLearningProgress() : [],
                 AdminService.getJobs(),
-                AdminService.getCandidates(),
-                AdminService.getRecruitmentMetrics(),
                 AdminService.getOnboarding(),
                 AdminService.getDocuments(),
                 AdminService.getAssets ? AdminService.getAssets() : [],
@@ -143,14 +144,33 @@ const HRPortal = () => {
             setSecurityHealth(sec || []);
             setLearning(lrn || []);
             setJobs(jbs || []);
-            setCandidates(cnds || []);
-            setRecruitmentMetrics(metrics);
+            setCandidates(apps || []); // Applications and candidates are the same data
             setOnboarding(onb || []);
             setDocuments(docs || []);
             setAssets(asts || []);
             setSurveys(svys || []);
+
+            // Calculate recruitment metrics locally to save API calls
+            if (apps && jbs) {
+                const totalCandidates = apps.length;
+                const openPositions = jbs.filter(j => j.status === 'Active').length;
+                const hiredCount = apps.filter(c => c.stage === 'hired').length;
+                const rejectedCount = apps.filter(c => c.stage === 'rejected').length;
+                const interviewCount = apps.filter(c => c.stage === 'Interview scheduled' || c.stage === 'interview(waiting / completed)').length;
+
+                setRecruitmentMetrics({
+                    totalCandidates,
+                    openPositions,
+                    hiredCount,
+                    rejectedCount,
+                    interviewCount,
+                    timeToHire: '18 Days'
+                });
+            }
         } catch (error) {
             console.error("HRPortal: Error refreshing data", error);
+        } finally {
+            setIsRefreshing(false);
         }
     };
 
@@ -436,7 +456,7 @@ const HRPortal = () => {
                         >
                             {orgChart.map((emp, i) => (
                                 <GlassCard key={emp.id} delay={i * 0.1} style={{ position: 'relative', overflow: 'hidden' }}>
-                                    <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: emp.project.includes('Gold') ? '#D4AF37' : '#3b82f6' }}></div>
+                                    <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: (emp.project && emp.project.includes('Gold')) ? '#D4AF37' : '#3b82f6' }}></div>
                                     <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                                         <img src={emp.avatar} alt={emp.name} style={{ width: '60px', height: '60px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)' }} />
                                         <div>
@@ -444,8 +464,8 @@ const HRPortal = () => {
                                             <p style={{ margin: '5px 0', color: '#94a3b8', fontSize: '0.9rem' }}>{emp.role}</p>
                                             <span style={{
                                                 fontSize: '0.75rem', padding: '4px 8px', borderRadius: '4px',
-                                                background: emp.project.includes('Gold') ? 'rgba(212, 175, 55, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                                                color: emp.project.includes('Gold') ? '#fcd34d' : '#60a5fa'
+                                                background: (emp.project && emp.project.includes('Gold')) ? 'rgba(212, 175, 55, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                                                color: (emp.project && emp.project.includes('Gold')) ? '#fcd34d' : '#60a5fa'
                                             }}>
                                                 {emp.project}
                                             </span>

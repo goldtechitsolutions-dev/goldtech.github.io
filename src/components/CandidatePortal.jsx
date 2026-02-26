@@ -4,6 +4,8 @@ import { User, Lock, ArrowRight, FileText, Calendar, CheckCircle, Clock, Chevron
 import { Link } from 'react-router-dom';
 import { countryCodes } from '../utils/countryData';
 import { useRef, useEffect } from 'react';
+import AdminService from '../services/adminService';
+
 
 const CandidatePortal = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -28,8 +30,8 @@ const CandidatePortal = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     const filteredCountries = countryCodes.filter(c =>
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.code.includes(searchTerm)
+        (c.name && c.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (c.code && c.code.includes(searchTerm))
     );
 
     useEffect(() => {
@@ -46,8 +48,6 @@ const CandidatePortal = () => {
         e.preventDefault();
         setLoginError("");
         try {
-            const module = await import('../services/adminService');
-            const AdminService = module.default;
             const candidates = await AdminService.getCandidates();
 
             const candidate = candidates.find(c => c.email.toLowerCase() === email.toLowerCase());
@@ -79,9 +79,6 @@ const CandidatePortal = () => {
         setPhoneError("");
 
         try {
-            const module = await import('../services/adminService');
-            const AdminService = module.default;
-
             const resumeInput = document.getElementById('portal-resume');
             const resumeFile = resumeInput?.files[0];
 
@@ -541,21 +538,69 @@ const CandidatePortal = () => {
                                             <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Uploaded {userProfile?.appliedDate || 'Nov 1, 2023'}</span>
                                         </div>
                                     </div>
-                                    {userProfile?.resumeFile && (
+                                    {(userProfile?.resume_url || userProfile?.resumeFile) && (
                                         <button
                                             onClick={() => {
-                                                const link = document.createElement('a');
-                                                link.href = userProfile.resumeFile;
-                                                link.download = userProfile.resume;
-                                                document.body.appendChild(link);
-                                                link.click();
-                                                document.body.removeChild(link);
+                                                const source = userProfile.resume_url || userProfile.resume;
+                                                const filename = userProfile.resume || 'resume.pdf';
+
+                                                if (!source) {
+                                                    alert("No resume data found.");
+                                                    return;
+                                                }
+
+                                                const sourceStr = String(source);
+
+                                                try {
+                                                    // Handle URL
+                                                    if (sourceStr.startsWith('http')) {
+                                                        const link = document.createElement('a');
+                                                        link.href = sourceStr;
+                                                        link.target = '_blank';
+                                                        link.download = filename;
+                                                        document.body.appendChild(link);
+                                                        link.click();
+                                                        document.body.removeChild(link);
+                                                        return;
+                                                    }
+
+                                                    // Handle base64
+                                                    if (sourceStr.startsWith('data:')) {
+                                                        const [header, content] = sourceStr.split(',');
+                                                        const mime = header.match(/:(.*?);/)[1];
+                                                        const bstr = atob(content);
+                                                        let n = bstr.length;
+                                                        const u8arr = new Uint8Array(n);
+                                                        while (n--) {
+                                                            u8arr[n] = bstr.charCodeAt(n);
+                                                        }
+                                                        const blob = new Blob([u8arr], { type: mime });
+                                                        const url = URL.createObjectURL(blob);
+
+                                                        const link = document.createElement('a');
+                                                        link.href = url;
+                                                        link.download = filename;
+                                                        document.body.appendChild(link);
+                                                        link.click();
+                                                        document.body.removeChild(link);
+                                                        setTimeout(() => URL.revokeObjectURL(url), 100);
+                                                        return;
+                                                    }
+
+                                                    // Fallback
+                                                    alert(`File reference found: "${sourceStr}". Only full file data or links can be opened.`);
+                                                } catch (e) {
+                                                    console.error("View error:", e);
+                                                    alert("Failed to process resume file.");
+                                                }
                                             }}
                                             style={{ background: 'transparent', border: 'none', color: '#38bdf8', cursor: 'pointer' }}
                                         >
                                             View
                                         </button>
                                     )}
+
+
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>

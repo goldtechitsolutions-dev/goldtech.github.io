@@ -3,13 +3,18 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Search, Filter, Code, Database, Globe, Cpu, PlayCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import corporateTeam from '../assets/corporate-team.png';
+import AdminService from '../services/adminService';
+
 
 const Career = () => {
     // showForm can be false, 'apply', or 'profile'
     const [showForm, setShowForm] = React.useState(false);
     const [status, setStatus] = React.useState("");
-    const [jobs, setJobs] = React.useState([]);
-    const [filteredJobs, setFilteredJobs] = React.useState([]);
+    const [jobs, setJobs] = React.useState(() => {
+        const cached = AdminService.getJobsImmediate();
+        return Array.isArray(cached) ? cached.filter(j => j.status === 'Active') : [];
+    });
+    const [filteredJobs, setFilteredJobs] = React.useState(jobs);
     const [filters, setFilters] = React.useState({ search: '', department: 'All', type: 'All' });
 
 
@@ -19,20 +24,23 @@ const Career = () => {
     React.useEffect(() => {
         // Fetch active jobs from AdminService (async)
         const fetchJobs = async () => {
-            const module = await import('../services/adminService');
-            const AdminService = module.default;
-            const allJobs = await AdminService.getJobs();
-            const activeJobs = Array.isArray(allJobs) ? allJobs.filter(job => job.status === 'Active') : [];
-            setJobs(activeJobs);
-            setFilteredJobs(activeJobs);
+            try {
+                const allJobs = await AdminService.getJobs();
+                const activeJobs = Array.isArray(allJobs) ? allJobs.filter(job => job.status === 'Active') : [];
+                setJobs(activeJobs);
+                setFilteredJobs(activeJobs);
+            } catch (err) {
+                console.error("Error fetching jobs:", err);
+            }
         };
         fetchJobs();
     }, []);
 
+
     React.useEffect(() => {
         let result = jobs;
         if (filters.search) {
-            result = result.filter(job => job.title.toLowerCase().includes(filters.search.toLowerCase()));
+            result = result.filter(job => job.title && job.title.toLowerCase().includes(filters.search.toLowerCase()));
         }
         if (filters.department !== 'All') {
             result = result.filter(job => job.department === filters.department);
@@ -54,8 +62,15 @@ const Career = () => {
         formData.append('source', 'Career Page');
 
         try {
-            const module = await import('../services/adminService');
-            const AdminService = module.default;
+            const resumeFile = formData.get('resume');
+            if (!resumeFile || (resumeFile instanceof File && resumeFile.size === 0)) {
+                // Keep this one as it's a legitimate user-facing message, but maybe use a better UI later.
+                // For now, it's better than silent failure.
+                alert("Please upload your resume before submitting.");
+                return;
+            }
+
+            setStatus("SUBMITTING");
 
             await AdminService.addCandidate(formData);
 
@@ -64,14 +79,17 @@ const Career = () => {
             if (fileLabel) fileLabel.textContent = "Drag & drop your resume here or browse";
 
             setStatus("SUCCESS");
+
             setTimeout(() => {
                 setShowForm(false);
                 setStatus("");
-            }, 3000);
+            }, 10000);
+
         } catch (error) {
-            console.error("Submission error:", error);
+            console.error("Submission error caught in component:", error);
             setStatus("ERROR");
         }
+
     };
 
     return (
@@ -305,12 +323,26 @@ const Career = () => {
                         <div style={{ width: '100%', maxWidth: '800px', background: 'rgba(255,255,255,0.05)', padding: '40px', borderRadius: '20px', margin: '0 auto', textAlign: 'left', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
                                 <h3 style={{ margin: 0, fontSize: '1.8rem', color: '#fff' }}>Apply for {JSON.parse(localStorage.getItem('currentJob') || '{}').title}</h3>
-                                <button onClick={() => setShowForm(false)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '1rem' }}>Cancel</button>
+                                <button type="button" onClick={() => setShowForm(false)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '1rem' }}>Cancel</button>
                             </div>
 
 
 
+
                             <form onSubmit={submitForm} style={{ display: 'grid', gap: '20px' }}>
+                                {status === "SUCCESS" && (
+                                    <div style={{ padding: '20px', background: 'rgba(34, 197, 94, 0.2)', color: '#86efac', borderRadius: '12px', border: '1px solid #22c55e', textAlign: 'center', fontWeight: '800', fontSize: '1.2rem', marginBottom: '20px' }}>
+                                        ✓ Application Submitted Successfully!<br />
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>Our talent team will review your profile shortly.</span>
+                                    </div>
+                                )}
+                                {status === "ERROR" && (
+                                    <div style={{ padding: '20px', background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', borderRadius: '12px', border: '1px solid #ef4444', textAlign: 'center', fontWeight: '800', marginBottom: '20px' }}>
+                                        ✕ Error Submitting Application<br />
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>Please check your connection and try again.</span>
+                                    </div>
+                                )}
+
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                                     <input name="name" type="text" placeholder="Full Name *" required style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
                                     <input name="email" type="email" placeholder="Email Address *" required style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
@@ -334,9 +366,9 @@ const Career = () => {
                                     <input
                                         type="file"
                                         name="resume"
-                                        required
                                         id="resume-upload"
                                         style={{ display: 'none' }}
+
                                         onChange={(e) => {
                                             const fileName = e.target.files[0]?.name;
                                             if (fileName) {
@@ -351,31 +383,19 @@ const Career = () => {
                                         <span id="file-label">Drag & drop your resume here or <span style={{ color: '#D4AF37' }}>browse</span></span>
                                     </div>
                                 </div>
-
-                                {status === "SUCCESS" && (
-                                    <div style={{ padding: '15px', background: 'rgba(34, 197, 94, 0.1)', color: '#86efac', borderRadius: '8px', border: '1px solid rgba(34, 197, 94, 0.2)', textAlign: 'center', fontWeight: 'bold' }}>
-                                        Application Submitted Successfully! Our team will contact you soon.
-                                    </div>
-                                )}
-                                {status === "ERROR" && (
-                                    <div style={{ padding: '15px', background: 'rgba(239, 68, 68, 0.1)', color: '#fca5a5', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', textAlign: 'center', fontWeight: 'bold' }}>
-                                        There was an error submitting your application. Please try again.
-                                    </div>
-                                )}
-
-                                <button type="submit" disabled={status === "SUCCESS"} style={{
+                                <button type="submit" disabled={status === "SUCCESS" || status === "SUBMITTING"} style={{
                                     marginTop: '20px',
                                     padding: '15px',
-                                    background: status === "SUCCESS" ? '#1e293b' : 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)',
-                                    color: status === "SUCCESS" ? '#94a3b8' : '#000',
+                                    background: (status === "SUCCESS" || status === "SUBMITTING") ? '#1e293b' : 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)',
+                                    color: (status === "SUCCESS" || status === "SUBMITTING") ? '#94a3b8' : '#000',
                                     border: 'none',
                                     borderRadius: '8px',
                                     fontWeight: 'bold',
                                     fontSize: '1.1rem',
-                                    cursor: status === "SUCCESS" ? 'default' : 'pointer',
-                                    opacity: status === "SUCCESS" ? 0.7 : 1
+                                    cursor: (status === "SUCCESS" || status === "SUBMITTING") ? 'default' : 'pointer',
+                                    opacity: (status === "SUCCESS" || status === "SUBMITTING") ? 0.7 : 1
                                 }}>
-                                    {status === "SUCCESS" ? "Application Received" : "Submit Application"}
+                                    {status === "SUCCESS" ? "Application Received" : status === "SUBMITTING" ? "Submitting..." : "Submit Application"}
                                 </button>
                             </form>
                         </div>

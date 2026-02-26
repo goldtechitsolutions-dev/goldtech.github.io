@@ -100,6 +100,7 @@ const SalesPortal = () => {
     const [lostAnalysis, setLostAnalysis] = useState([]);
     const [timelineLead, setTimelineLead] = useState(null);
     const [leadTimeline, setLeadTimeline] = useState([]);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     // UI State for Modals
     const [proposalModalOpen, setProposalModalOpen] = useState(false);
@@ -156,6 +157,8 @@ const SalesPortal = () => {
     }, []);
 
     const refreshData = async () => {
+        if (isRefreshing) return;
+        setIsRefreshing(true);
         try {
             const [lds, dls, acts, mts, qrs] = await Promise.all([
                 AdminService.getLeads(),
@@ -171,6 +174,8 @@ const SalesPortal = () => {
             setQueries(qrs || []);
         } catch (error) {
             console.error("SalesPortal: Error refreshing data", error);
+        } finally {
+            setIsRefreshing(false);
         }
     };
 

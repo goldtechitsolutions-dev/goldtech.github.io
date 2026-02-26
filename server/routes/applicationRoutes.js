@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Application = require('../models/Application');
-const upload = require('../services/uploadService');
+const { upload, supabase } = require('../services/uploadService');
 
 // Get all applications
 router.get('/', async (req, res) => {
@@ -13,16 +12,37 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Add an application with resume upload
+// Add an application with resume upload to Supabase
 router.post('/', upload.single('resume'), async (req, res) => {
     try {
+        let resumeUrl = null;
+
+        if (req.file) {
+            const fileName = `${Date.now()}-${req.file.originalname}`;
+            const { data, error } = await supabase.storage
+                .from('resumes')
+                .upload(`resumes/${fileName}`, req.file.buffer, {
+                    contentType: req.file.mimetype,
+                    upsert: true
+                });
+
+            if (error) throw error;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('resumes')
+                .getPublicUrl(`resumes/${fileName}`);
+
+            resumeUrl = publicUrl;
+        }
+
         const applicationData = {
             ...req.body,
-            resume: req.file ? req.file.location : null // S3 file URL
+            resume: resumeUrl // Supabase file URL
         };
         const newApp = await Application.create(applicationData);
         res.status(201).json(newApp);
     } catch (err) {
+        console.error('Upload Error:', err);
         res.status(400).json({ message: err.message });
     }
 });

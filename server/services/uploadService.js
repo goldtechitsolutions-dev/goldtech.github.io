@@ -1,30 +1,22 @@
-const aws = require('aws-sdk');
+const { createClient } = require('@supabase/supabase-js');
 const multer = require('multer');
-const multerS3 = require('multer-s3');
 require('dotenv').config();
 
-// Configure AWS
-aws.config.update({
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    region: process.env.AWS_REGION
-});
+// Supabase configuration
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-const s3 = new aws.S3();
-
+// Multer memory storage
+const storage = multer.memoryStorage();
 const upload = multer({
-    storage: multerS3({
-        s3: s3,
-        bucket: process.env.AWS_BUCKET_NAME,
-        acl: 'public-read', // Adjust based on security requirements
-        metadata: function (req, file, cb) {
-            cb(null, { fieldName: file.fieldname });
-        },
-        key: function (req, file, cb) {
-            const fileName = `${Date.now().toString()}-${file.originalname}`;
-            cb(null, `resumes/${fileName}`);
-        }
-    })
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    }
 });
 
-module.exports = upload;
+module.exports = {
+    upload,
+    supabase
+};
