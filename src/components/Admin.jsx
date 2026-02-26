@@ -9,7 +9,7 @@ import {
     DollarSign, Briefcase, Calendar, Clock, Lock,
     Shield, Key, Eye, EyeOff, Copy, RefreshCw, Hash,
     MessageSquare, BarChart2, User, Trash2, Edit, Activity, Server, HardDrive, BarChart3, Video, Building, Globe, AlertTriangle, FileCheck, Mail, Phone, Microscope,
-    Cloud, Code, ClipboardList, Zap, UserPlus, Reply, ShieldCheck
+    Cloud, Code, ClipboardList, Zap, UserPlus, Reply, ShieldCheck, ShieldAlert
 } from 'lucide-react';
 
 import logo from '../assets/logo-transparent.png';
