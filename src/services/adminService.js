@@ -875,6 +875,7 @@ const AdminService = {
 
         } catch (error) {
             console.error("Candidate submission failed. Error context:", error);
+            alert("Cloud upload failed! Your data is saved locally, but not in Supabase. Error: " + error.message);
 
             let candidateData = candidate;
             let resumeName = 'resume.pdf';
