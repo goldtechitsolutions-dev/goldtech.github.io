@@ -1,4 +1,4 @@
-
+﻿
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -1088,9 +1088,7 @@ const Admin = () => {
                     <button onClick={() => setActiveTab('billing')} style={navLinkStyle(activeTab === 'billing')}>
                         <DollarSign size={18} /> Payroll & Billing
                     </button>
-                    <button onClick={() => setActiveTab('client-management')} style={navLinkStyle(activeTab === 'client-management')}>
-                        <UserPlus size={18} /> Client Management
-                    </button>
+                    <button onClick={() => setActiveTab('access-management')} style={navLinkStyle(activeTab === 'access-management')}><ShieldCheck size={18} /> Access Management</button>
 
                     <div style={{ padding: '20px 15px 10px', fontSize: '0.7rem', fontWeight: '700', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '2px' }}>Intel & Audit</div>
                     <button onClick={() => setActiveTab('chat-analytics')} style={navLinkStyle(activeTab === 'chat-analytics')}>
@@ -1159,7 +1157,7 @@ const Admin = () => {
                             {activeTab === 'chat-analytics' && 'Conversational Intelligence'}
 
                             {activeTab === 'audit' && 'Immutable Logs'}
-                            {activeTab === 'client-management' && 'Client Management Pipeline'}
+                            {activeTab === 'access-management' && 'Privileged Access Management'}
                             {activeTab === 'settings' && 'Core Configuration'}
                         </h1>
                         <p style={{ color: '#64748b', fontSize: '0.95rem', fontWeight: '500' }}>Authenticated Command Session • {new Date().toLocaleDateString()}</p>
@@ -4093,84 +4091,193 @@ const Admin = () => {
 
 
 
-                {activeTab === 'client-management' && (
-                    <div style={cardStyle}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap', gap: '20px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                <div style={{
-                                    width: '45px', height: '45px', background: 'rgba(212, 175, 55, 0.1)',
-                                    borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    border: '1px solid rgba(212, 175, 55, 0.2)'
-                                }}>
-                                    <UserPlus size={22} color="#D4AF37" />
+                                {/* --- Access Management --- */}
+                {
+                    activeTab === 'access-management' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+                            {/* JIT Access Requests Queue */}
+                            <div style={cardStyle}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                                    <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#fff', letterSpacing: '0.5px' }}>JIT Request Queue</h3>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <span style={{ background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
+                                            {jitRequests.filter(r => r.status === 'Pending').length} PENDING
+                                        </span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800', margin: 0 }}>Client Management Pipeline</h3>
-                                    <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: 0 }}>Manage the intake and setup of new enterprise clients</p>
+                                <div style={{ overflowX: 'auto' }} className="custom-scrollbar">
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                        <thead>
+                                            <tr style={{ background: 'rgba(255, 255, 255, 0.02)', textAlign: 'left' }}>
+                                                <th style={thStyle}>Operator</th>
+                                                <th style={thStyle}>Requested Role</th>
+                                                <th style={thStyle}>Justification</th>
+                                                <th style={thStyle}>Duration</th>
+                                                <th style={thStyle}>Status</th>
+                                                <th style={thStyle}>Directives</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {jitRequests.map((req) => (
+                                                <tr key={req.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
+                                                    <td style={{ ...tdStyle, fontWeight: '700', color: '#fff' }}>{req.user}</td>
+                                                    <td style={tdStyle}><span style={{ color: '#D4AF37', fontWeight: 'bold' }}>{req.role}</span></td>
+                                                    <td style={{ ...tdStyle, fontSize: '0.8rem', opacity: 0.8 }}>{req.reason}</td>
+                                                    <td style={tdStyle}>{req.duration}</td>
+                                                    <td style={tdStyle}>
+                                                        <span style={{
+                                                            padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800',
+                                                            background: req.status === 'Approved' ? 'rgba(16, 185, 129, 0.1)' : req.status === 'Pending' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                                            color: req.status === 'Approved' ? '#10b981' : req.status === 'Pending' ? '#f59e0b' : '#ef4444'
+                                                        }}>
+                                                            {req.status}
+                                                        </span>
+                                                    </td>
+                                                    <td style={tdStyle}>
+                                                        {req.status === 'Pending' && (
+                                                            <div style={{ display: 'flex', gap: '10px' }}>
+                                                                <button
+                                                                    onClick={() => setJitRequests(AdminService.approveJitAccess(req.id))}
+                                                                    style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', color: '#10b981', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '800' }}
+                                                                >
+                                                                    APPROVE
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setJitRequests(AdminService.rejectJitAccess(req.id))}
+                                                                    style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '800' }}
+                                                                >
+                                                                    REJECT
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => handleOpenClientModal()}
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: '10px',
-                                    background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
-                                    color: '#000', border: 'none', padding: '12px 20px',
-                                    borderRadius: '12px', cursor: 'pointer', fontWeight: '800',
-                                    fontSize: '0.9rem', boxShadow: '0 10px 20px -5px rgba(212, 175, 55, 0.3)'
-                                }}
-                            >
-                                <UserPlus size={18} /> Onboard New Client
-                            </button>
-                        </div>
 
-                        <div style={{ overflowX: 'auto', paddingBottom: '10px' }} className="custom-scrollbar">
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                <thead>
-                                    <tr style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
-                                        <th style={thStyle}>Client Partner</th>
-                                        <th style={thStyle}>Liaison</th>
-                                        <th style={thStyle}>Onboarding Stage</th>
-                                        <th style={thStyle}>Account Status</th>
-                                        <th style={{ ...thStyle, textAlign: 'right' }}>Directives</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {clients.map((c) => (
-                                        <tr key={c.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)', transition: 'all 0.3s' }}>
-                                            <td style={{ ...tdStyle, fontWeight: '800', color: '#D4AF37' }}>
-                                                {c.name}
-                                            </td>
-                                            <td style={tdStyle}>
-                                                <div style={{ fontWeight: '700', color: '#fff' }}>{c.contactPerson || 'System Admin'}</div>
-                                            </td>
-                                            <td style={tdStyle}>
-                                                <div style={{ fontSize: '0.9rem', color: '#cbd5e1' }}>{c.status === 'Active' ? 'Fully Setup' : 'Requirements Gathering'}</div>
-                                                <div style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', marginTop: '5px' }}>
-                                                    <div style={{ width: c.status === 'Active' ? '100%' : '40%', height: '100%', background: c.status === 'Active' ? '#10b981' : '#f59e0b', borderRadius: '2px' }}></div>
-                                                </div>
-                                            </td>
-                                            <td style={tdStyle}>
-                                                <span style={statusBadge(c.status)}>{c.status}</span>
-                                            </td>
-                                            <td style={{ ...tdStyle, textAlign: 'right' }}>
-                                                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                                                    <button onClick={() => handleOpenClientModal(c)} title="Continue Onboarding" style={{ color: '#3b82f6', background: 'rgba(59, 130, 246, 0.1)', border: 'none', cursor: 'pointer', padding: '8px 16px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800' }}>
-                                                        MANAGE
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {clients.length === 0 && (
-                                        <tr>
-                                            <td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>No clients currently in pipeline.</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
+                                {/* Client Management Pipeline */}
+                                <div style={cardStyle}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap', gap: '20px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                            <div style={{
+                                                width: '45px', height: '45px', background: 'rgba(212, 175, 55, 0.1)',
+                                                borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                border: '1px solid rgba(212, 175, 55, 0.2)'
+                                            }}>
+                                                <UserPlus size={22} color="#D4AF37" />
+                                            </div>
+                                            <div>
+                                                <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800', margin: 0 }}>Client Management Pipeline</h3>
+                                                <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: 0 }}>Manage enterprise client intake and setup</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => handleOpenClientModal()}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: '10px',
+                                                background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                                                color: '#000', border: 'none', padding: '12px 20px',
+                                                borderRadius: '12px', cursor: 'pointer', fontWeight: '800',
+                                                fontSize: '0.9rem', boxShadow: '0 10px 20px -5px rgba(212, 175, 55, 0.3)'
+                                            }}
+                                        >
+                                            <UserPlus size={18} /> Onboard New Client
+                                        </button>
+                                    </div>
+
+                                    <div style={{ overflowX: 'auto', paddingBottom: '10px' }} className="custom-scrollbar">
+                                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                            <thead>
+                                                <tr style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
+                                                    <th style={thStyle}>Client Partner</th>
+                                                    <th style={thStyle}>Liaison</th>
+                                                    <th style={thStyle}>Onboarding Stage</th>
+                                                    <th style={thStyle}>Account Status</th>
+                                                    <th style={{ ...thStyle, textAlign: 'right' }}>Directives</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {clients.map((c) => (
+                                                    <tr key={c.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)', transition: 'all 0.3s' }}>
+                                                        <td style={{ ...tdStyle, fontWeight: '800', color: '#D4AF37' }}>
+                                                            {c.name}
+                                                        </td>
+                                                        <td style={tdStyle}>
+                                                            <div style={{ fontWeight: '700', color: '#fff' }}>{c.contactPerson || 'System Admin'}</div>
+                                                        </td>
+                                                        <td style={tdStyle}>
+                                                            <div style={{ fontSize: '0.9rem', color: '#cbd5e1' }}>{c.status === 'Active' ? 'Fully Setup' : 'Requirements Gathering'}</div>
+                                                            <div style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', marginTop: '5px' }}>
+                                                                <div style={{ width: c.status === 'Active' ? '100%' : '40%', height: '100%', background: c.status === 'Active' ? '#10b981' : '#f59e0b', borderRadius: '2px' }}></div>
+                                                            </div>
+                                                        </td>
+                                                        <td style={tdStyle}>
+                                                            <span style={statusBadge(c.status)}>{c.status}</span>
+                                                        </td>
+                                                        <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                                            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                                                <button onClick={() => handleOpenClientModal(c)} title="Continue Onboarding" style={{ color: '#3b82f6', background: 'rgba(59, 130, 246, 0.1)', border: 'none', cursor: 'pointer', padding: '8px 16px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800' }}>
+                                                                    MANAGE
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {clients.length === 0 && (
+                                                    <tr>
+                                                        <td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>No clients currently in pipeline.</td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {/* Permissions Matrix Overview */}
+                                <div style={cardStyle}>
+                                    <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#fff', marginBottom: '25px' }}>Role Permissions Matrix</h3>
+                                    <div style={{ overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                            <thead>
+                                                <tr style={{ textAlign: 'left', background: 'rgba(255,255,255,0.02)' }}>
+                                                    <th style={thStyle}>Identity Role</th>
+                                                    <th style={thStyle}>Users</th>
+                                                    <th style={thStyle}>Content</th>
+                                                    <th style={thStyle}>Security</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {roles.map(role => (
+                                                    <tr key={role.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
+                                                        <td style={{ ...tdStyle, fontWeight: '700' }}>{role.name}</td>
+                                                        {['users', 'content', 'settings'].map(perm => (
+                                                            <td key={perm} style={tdStyle}>
+                                                                <span style={{
+                                                                    padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: '800',
+                                                                    background: role.permissions[perm] === 'read_write' ? 'rgba(16, 185, 129, 0.1)' : role.permissions[perm] === 'read' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                                                    color: role.permissions[perm] === 'read_write' ? '#10b981' : role.permissions[perm] === 'read' ? '#3b82f6' : '#ef4444'
+                                                                }}>
+                                                                    {role.permissions[perm] === 'read_write' ? 'FULL' : role.permissions[perm] === 'read' ? 'READ' : 'NONE'}
+                                                                </span>
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <button onClick={() => setActiveTab('settings')} style={{ width: '100%', marginTop: '20px', padding: '12px', background: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.1)', color: '#D4AF37', borderRadius: '12px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer' }}>
+                                        CONFIGURE DETAILED POLICIES
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
             </div >
 
@@ -4337,3 +4444,4 @@ const inputStyle = {
 };
 
 export default Admin;
+
