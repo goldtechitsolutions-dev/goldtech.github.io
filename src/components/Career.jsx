@@ -330,18 +330,7 @@ const Career = () => {
 
 
                             <form onSubmit={submitForm} style={{ display: 'grid', gap: '20px' }}>
-                                {status === "SUCCESS" && (
-                                    <div style={{ padding: '20px', background: 'rgba(34, 197, 94, 0.2)', color: '#86efac', borderRadius: '12px', border: '1px solid #22c55e', textAlign: 'center', fontWeight: '800', fontSize: '1.2rem', marginBottom: '20px' }}>
-                                        ✓ Application Submitted Successfully!<br />
-                                        <span style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>Our talent team will review your profile shortly.</span>
-                                    </div>
-                                )}
-                                {status === "ERROR" && (
-                                    <div style={{ padding: '20px', background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', borderRadius: '12px', border: '1px solid #ef4444', textAlign: 'center', fontWeight: '800', marginBottom: '20px' }}>
-                                        ✕ Error Submitting Application<br />
-                                        <span style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>Please check your connection and try again.</span>
-                                    </div>
-                                )}
+
 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                                     <input name="name" type="text" placeholder="Full Name *" required style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
@@ -383,6 +372,18 @@ const Career = () => {
                                         <span id="file-label">Drag & drop your resume here or <span style={{ color: '#D4AF37' }}>browse</span></span>
                                     </div>
                                 </div>
+                                {status === "SUCCESS" && (
+                                    <div style={{ padding: '20px', background: 'rgba(34, 197, 94, 0.2)', color: '#86efac', borderRadius: '12px', border: '1px solid #22c55e', textAlign: 'center', fontWeight: '800', fontSize: '1.2rem', marginBottom: '10px' }}>
+                                        ✓ Application Submitted Successfully!<br />
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>Our talent team will review your profile shortly.</span>
+                                    </div>
+                                )}
+                                {status === "ERROR" && (
+                                    <div style={{ padding: '20px', background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', borderRadius: '12px', border: '1px solid #ef4444', textAlign: 'center', fontWeight: '800', marginBottom: '10px' }}>
+                                        ✕ Error Submitting Application<br />
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>Please check your connection and try again.</span>
+                                    </div>
+                                )}
                                 <button type="submit" disabled={status === "SUCCESS" || status === "SUBMITTING"} style={{
                                     marginTop: '20px',
                                     padding: '15px',
