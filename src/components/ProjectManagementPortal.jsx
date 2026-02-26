@@ -94,7 +94,7 @@ const ActionButton = ({ onClick, children, variant = 'primary', icon: Icon, disa
     );
 };
 
-const ProjectManagementPortal = () => {
+const ProjectManagementPortal = ({ currentUser }) => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('dashboard');
     const [projects, setProjects] = useState([]);
@@ -108,7 +108,7 @@ const ProjectManagementPortal = () => {
 
     useEffect(() => {
         loadData();
-    }, [activeTab, selectedProject]);
+    }, [activeTab, selectedProject, currentUser]);
 
     const loadData = async () => {
         setLoading(true);
@@ -275,9 +275,11 @@ const ProjectManagementPortal = () => {
                 </div>
 
                 <div style={{ marginBottom: '30px', textAlign: 'center' }}>
-                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#D4AF37', margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 'bold', color: '#0f172a' }}>PM</div>
-                    <h3 style={{ color: '#fff', margin: 0 }}>Mike Manager</h3>
-                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>Head of Delivery</p>
+                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#D4AF37', margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 'bold', color: '#0f172a' }}>
+                        {currentUser?.name?.charAt(0) || 'P'}
+                    </div>
+                    <h3 style={{ color: '#fff', margin: 0 }}>{currentUser?.name || 'Project Lead'}</h3>
+                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>{currentUser?.designation || 'Head of Delivery'}</p>
                 </div>
 
                 <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, overflowY: 'auto' }}>

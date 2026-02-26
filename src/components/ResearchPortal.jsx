@@ -70,7 +70,7 @@ const ActionButton = ({ onClick, children, variant = 'primary', icon: Icon, disa
     );
 };
 
-const ResearchPortal = () => {
+const ResearchPortal = ({ currentUser }) => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('dashboard');
     const [loading, setLoading] = useState(true);
@@ -84,11 +84,11 @@ const ResearchPortal = () => {
 
     // UI State
     const [showIdeaForm, setShowIdeaForm] = useState(false);
-    const [newIdea, setNewIdea] = useState({ title: '', submitter: '' });
+    const [newIdea, setNewIdea] = useState({ title: '', submitter: currentUser?.name || '' });
 
     useEffect(() => {
         loadData();
-    }, []);
+    }, [currentUser]);
 
     const loadData = async () => {
         setLoading(true);
@@ -179,12 +179,20 @@ const ResearchPortal = () => {
                 height: '100vh',
                 zIndex: 10
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '50px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '40px' }}>
                     <img src={logo} alt="GoldTech" style={{ width: '45px', height: 'auto' }} />
                     <div style={{ lineHeight: 1 }}>
                         <span style={{ color: '#8B5CF6', fontWeight: 'bold', fontSize: '1.4rem', letterSpacing: '1px' }}>GOLD</span>
                         <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '1.4rem', letterSpacing: '1px' }}>LABS</span>
                     </div>
+                </div>
+
+                <div style={{ marginBottom: '30px', textAlign: 'center', padding: '15px', background: 'rgba(139, 92, 246, 0.05)', borderRadius: '16px', border: '1px solid rgba(139, 92, 246, 0.1)' }}>
+                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(135deg, #8B5CF6, #D946EF)', margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 'bold', color: '#fff' }}>
+                        {currentUser?.name?.charAt(0) || 'R'}
+                    </div>
+                    <h3 style={{ color: '#fff', margin: 0, fontSize: '1rem' }}>{currentUser?.name || 'Researcher'}</h3>
+                    <p style={{ color: '#94a3b8', fontSize: '0.75rem', margin: '4px 0 0 0' }}>{currentUser?.designation || 'Principal Scientist'}</p>
                 </div>
 
                 <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>

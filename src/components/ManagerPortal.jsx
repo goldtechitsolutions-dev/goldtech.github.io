@@ -77,7 +77,7 @@ const ActionButton = ({ onClick, children, variant = 'primary', icon: Icon, disa
     );
 };
 
-const ManagerPortal = () => {
+const ManagerPortal = ({ currentUser }) => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('dashboard');
 
@@ -178,9 +178,11 @@ const ManagerPortal = () => {
                 </div>
 
                 <div style={{ marginBottom: '30px', textAlign: 'center' }}>
-                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#D4AF37', margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 'bold', color: '#0f172a' }}>M</div>
-                    <h3 style={{ color: '#fff', margin: 0 }}>Mike Manager</h3>
-                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>Delivery Head</p>
+                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#D4AF37', margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 'bold', color: '#0f172a' }}>
+                        {currentUser?.name?.charAt(0) || 'M'}
+                    </div>
+                    <h3 style={{ color: '#fff', margin: 0 }}>{currentUser?.name || 'Manager'}</h3>
+                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>{currentUser?.designation || 'Delivery Head'}</p>
                 </div>
 
                 <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>

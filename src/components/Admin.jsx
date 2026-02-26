@@ -20,7 +20,20 @@ import {
 } from 'recharts';
 
 const Admin = () => {
+    const departmentDesignations = {
+        'Engineering': ['Senior Developer', 'Junior Developer', 'QA Engineer', 'System Admin', 'Full Stack Developer'],
+        'HR': ['HR Manager', 'HR Specialist', 'Recruitment Manager'],
+        'Sales': ['Sales Director', 'Sales Executive', 'Account Manager'],
+        'Finance': ['CFO', 'Finance Analyst', 'Accountant'],
+        'Operations': ['Operations Manager', 'Logistics Coordinator'],
+        'Marketing': ['Marketing Manager', 'Content Strategist', 'SEO Specialist'],
+        'Management': ['CEO', 'CTO', 'Project Manager'],
+        'Research': ['Research Analyst', 'Data Scientist'],
+        'Support': ['Support Specialist', 'Helpdesk Technician']
+    };
+
     const navigate = useNavigate();
+
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -124,6 +137,8 @@ const Admin = () => {
     // Modal State
     const [selectedItem, setSelectedItem] = useState(null);
     const [modalType, setModalType] = useState(null); // 'application', 'query', 'meeting', 'upsert_user', 'upsert_credential', 'chat_transcript'
+    const [modalError, setModalError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Password Vault State
     const [visiblePasswords, setVisiblePasswords] = useState({});
@@ -233,7 +248,7 @@ const Admin = () => {
             setStats([
                 { title: 'Total Visits', value: '12,450', change: '+12%', icon: <Users size={24} color="#004687" /> },
                 { title: 'Active Leads', value: (qs?.length || 0).toString(), change: 'Hot', icon: <MessageSquare size={24} color="#f59e0b" /> },
-                { title: 'Talent Pipeline', value: (cnds?.length || 0).toString(), change: 'Active', icon: <Briefcase size={24} color="#D4AF37" /> },
+                { title: 'Talent Pipeline', value: (apps?.length || 0).toString(), change: 'Active', icon: <Briefcase size={24} color="#D4AF37" /> },
                 { title: 'Infrastructure', value: '99.98%', change: 'Uptime', icon: <Activity size={24} color="#3b82f6" /> },
                 { title: 'Security', value: 'Secure', change: 'No Alerts', icon: <Shield size={24} color="#D4AF37" /> },
             ]);
@@ -336,6 +351,17 @@ const Admin = () => {
         setActiveTab('overview');
     };
 
+    const portals = [
+        'Sales portal',
+        'HR portal',
+        'Tasks portal',
+        'Project-management',
+        'Finance portal',
+        'Manager portal',
+        'Employee portal',
+        'Research & development portal'
+    ];
+
     const recruitmentStages = ['review pending', 'under process', 'Interview scheduled', 'hired', 'rejected'];
 
     const handleMoveStage = async (candidateId, direction) => {
@@ -360,7 +386,17 @@ const Admin = () => {
     const handleOpenUserModal = (user = null) => {
         setSelectedItem(user);
         setModalType('upsert_user');
-        setFormData(user || { name: '', email: '', role: 'Admin', department: '', status: 'Active' });
+        setFormData(user || {
+            name: '',
+            email: '',
+            role: 'Employee',
+            department: '',
+            designation: '',
+            dob: '',
+            mobile: '',
+            access: [],
+            status: 'Active'
+        });
     };
 
     const handleOpenClientModal = (client = null) => {
@@ -373,28 +409,85 @@ const Admin = () => {
         setSelectedItem(null);
         setModalType(null);
         setFormData({});
+        setModalError('');
+        setIsSubmitting(false);
     };
 
     const handleUserSubmit = async (e) => {
         e.preventDefault();
-        if (selectedItem && selectedItem.id) {
-            await AdminService.updateUser({ ...selectedItem, ...formData });
-        } else {
-            await AdminService.addUser(formData);
+        setModalError('');
+
+        // 1. Explicit Field Validation
+        if (!formData.department) {
+            setModalError('Please select a Department.');
+            return;
         }
-        await refreshData();
-        closeModal();
+        if (!formData.designation) {
+            setModalError('Please select a Designation.');
+            return;
+        }
+
+        // 2. Password Strength Validation (for new users)
+        if (!selectedItem) {
+            if (!formData.password) {
+                setModalError('Password is required for new users.');
+                return;
+            }
+            const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+~`|}{[\]:;?><,./\-=])(?=.{9,})/;
+            if (!passwordRegex.test(formData.password)) {
+                setModalError('Password must be at least 9 characters long and contain at least one uppercase letter, one number, and one symbol.');
+                return;
+            }
+        }
+
+        // 3. Duplicate Check
+        const isDuplicate = users.some(u =>
+            (u.email?.toLowerCase() === formData.email?.toLowerCase() || u.name?.toLowerCase() === formData.name?.toLowerCase()) &&
+            (!selectedItem || u.id !== selectedItem.id)
+        );
+
+        if (isDuplicate) {
+            setModalError('A user with this Email or Name already exists.');
+            return;
+        }
+
+        setIsSubmitting(true);
+        console.log('Initiating User Save:', formData.email);
+        try {
+            if (selectedItem && selectedItem.id) {
+                await AdminService.updateUser({ ...selectedItem, ...formData });
+            } else {
+                await AdminService.addUser(formData);
+            }
+            await refreshData();
+            closeModal();
+            console.log('User Save Successful');
+        } catch (err) {
+            setModalError('Failed to save user. Please check your network or try again.');
+            console.error('User Submit Error:', err);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleClientSubmit = async (e) => {
         e.preventDefault();
-        if (selectedItem && selectedItem.id) {
-            await AdminService.updateClient({ ...selectedItem, ...formData });
-        } else {
-            await AdminService.addClient(formData);
+        setModalError('');
+        setIsSubmitting(true);
+        try {
+            if (selectedItem && selectedItem.id) {
+                await AdminService.updateClient({ ...selectedItem, ...formData });
+            } else {
+                await AdminService.addClient(formData);
+            }
+            await refreshData();
+            closeModal();
+        } catch (err) {
+            setModalError('Failed to save client. Please check and try again.');
+            console.error('Client Submit Error:', err);
+        } finally {
+            setIsSubmitting(false);
         }
-        await refreshData();
-        closeModal();
     };
 
     const handleJobSubmit = async (e) => {
@@ -557,13 +650,22 @@ const Admin = () => {
 
     const handleCredentialSubmit = async (e) => {
         e.preventDefault();
-        if (selectedItem && selectedItem.id) {
-            await AdminService.updateCredential({ ...selectedItem, ...formData });
-        } else {
-            await AdminService.addCredential(formData);
+        setModalError('');
+        setIsSubmitting(true);
+        try {
+            if (selectedItem && selectedItem.id) {
+                await AdminService.updateCredential({ ...selectedItem, ...formData });
+            } else {
+                await AdminService.addCredential(formData);
+            }
+            await refreshData();
+            closeModal();
+        } catch (err) {
+            setModalError('Encryption failure or save error. Please try again.');
+            console.error('Credential Submit Error:', err);
+        } finally {
+            setIsSubmitting(false);
         }
-        await refreshData();
-        closeModal();
     };
 
     const handleDeleteCredential = async (id) => {
@@ -986,8 +1088,8 @@ const Admin = () => {
                     <button onClick={() => setActiveTab('billing')} style={navLinkStyle(activeTab === 'billing')}>
                         <DollarSign size={18} /> Payroll & Billing
                     </button>
-                    <button onClick={() => setActiveTab('access-management')} style={navLinkStyle(activeTab === 'access-management')}>
-                        <ShieldCheck size={18} /> Access Management
+                    <button onClick={() => setActiveTab('client-onboarding')} style={navLinkStyle(activeTab === 'client-onboarding')}>
+                        <UserPlus size={18} /> Client Onboarding
                     </button>
 
                     <div style={{ padding: '20px 15px 10px', fontSize: '0.7rem', fontWeight: '700', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '2px' }}>Intel & Audit</div>
@@ -1057,7 +1159,7 @@ const Admin = () => {
                             {activeTab === 'chat-analytics' && 'Conversational Intelligence'}
 
                             {activeTab === 'audit' && 'Immutable Logs'}
-                            {activeTab === 'access-management' && 'Privileged Access Management'}
+                            {activeTab === 'client-onboarding' && 'Client Onboarding Pipeline'}
                             {activeTab === 'settings' && 'Core Configuration'}
                         </h1>
                         <p style={{ color: '#64748b', fontSize: '0.95rem', fontWeight: '500' }}>Authenticated Command Session • {new Date().toLocaleDateString()}</p>
@@ -2351,173 +2453,7 @@ const Admin = () => {
                     )
                 }
 
-                {/* --- Access Management --- */}
-                {
-                    activeTab === 'access-management' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-                            {/* JIT Access Requests Queue */}
-                            <div style={cardStyle}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-                                    <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#fff', letterSpacing: '0.5px' }}>JIT Request Queue</h3>
-                                    <div style={{ display: 'flex', gap: '10px' }}>
-                                        <span style={{ background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-                                            {jitRequests.filter(r => r.status === 'Pending').length} PENDING
-                                        </span>
-                                    </div>
-                                </div>
-                                <div style={{ overflowX: 'auto' }} className="custom-scrollbar">
-                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                        <thead>
-                                            <tr style={{ background: 'rgba(255, 255, 255, 0.02)', textAlign: 'left' }}>
-                                                <th style={thStyle}>Operator</th>
-                                                <th style={thStyle}>Requested Role</th>
-                                                <th style={thStyle}>Justification</th>
-                                                <th style={thStyle}>Duration</th>
-                                                <th style={thStyle}>Status</th>
-                                                <th style={thStyle}>Directives</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {jitRequests.map((req) => (
-                                                <tr key={req.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
-                                                    <td style={{ ...tdStyle, fontWeight: '700', color: '#fff' }}>{req.user}</td>
-                                                    <td style={tdStyle}><span style={{ color: '#D4AF37', fontWeight: 'bold' }}>{req.role}</span></td>
-                                                    <td style={{ ...tdStyle, fontSize: '0.8rem', opacity: 0.8 }}>{req.reason}</td>
-                                                    <td style={tdStyle}>{req.duration}</td>
-                                                    <td style={tdStyle}>
-                                                        <span style={{
-                                                            padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800',
-                                                            background: req.status === 'Approved' ? 'rgba(16, 185, 129, 0.1)' : req.status === 'Pending' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                                            color: req.status === 'Approved' ? '#10b981' : req.status === 'Pending' ? '#f59e0b' : '#ef4444'
-                                                        }}>
-                                                            {req.status}
-                                                        </span>
-                                                    </td>
-                                                    <td style={tdStyle}>
-                                                        {req.status === 'Pending' && (
-                                                            <div style={{ display: 'flex', gap: '10px' }}>
-                                                                <button
-                                                                    onClick={() => setJitRequests(AdminService.approveJitAccess(req.id))}
-                                                                    style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', color: '#10b981', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '800' }}
-                                                                >
-                                                                    APPROVE
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setJitRequests(AdminService.rejectJitAccess(req.id))}
-                                                                    style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '800' }}
-                                                                >
-                                                                    REJECT
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
-                                {/* User Access Control */}
-                                <div style={cardStyle}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-                                        <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#fff' }}>Operator Access</h3>
-                                        <button onClick={() => handleOpenUserModal()} style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)', color: '#000', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer' }}>
-                                            <UserPlus size={14} style={{ marginRight: '5px' }} /> ONBOARD
-                                        </button>
-                                    </div>
-                                    <div style={{ overflowX: 'auto' }}>
-                                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                            <thead>
-                                                <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                                    <th style={{ ...thStyle, padding: '12px 10px' }}>Identity</th>
-                                                    <th style={{ ...thStyle, padding: '12px 10px' }}>Current Role</th>
-                                                    <th style={{ ...thStyle, padding: '12px 10px' }}>Status</th>
-                                                    <th style={{ ...thStyle, padding: '12px 10px' }}>Directives</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {users.map(user => (
-                                                    <tr key={user.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
-                                                        <td style={{ ...tdStyle, padding: '12px 10px' }}>
-                                                            <div style={{ fontWeight: '600' }}>{user.name}</div>
-                                                            <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>{user.email}</div>
-                                                        </td>
-                                                        <td style={{ ...tdStyle, padding: '12px 10px' }}>
-                                                            <select
-                                                                value={user.role}
-                                                                onChange={async (e) => {
-                                                                    const updatedUser = { ...user, role: e.target.value };
-                                                                    await AdminService.updateUser(updatedUser);
-                                                                    await refreshData();
-                                                                }}
-                                                                style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '4px', fontSize: '0.8rem', padding: '4px' }}
-                                                            >
-                                                                {roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
-                                                            </select>
-                                                        </td>
-                                                        <td style={{ ...tdStyle, padding: '12px 10px' }}>
-                                                            <span style={{
-                                                                padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800',
-                                                                background: user.status === 'Active' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                                                color: user.status === 'Active' ? '#10b981' : '#ef4444'
-                                                            }}>{user.status}</span>
-                                                        </td>
-                                                        <td style={{ ...tdStyle, padding: '12px 10px' }}>
-                                                            <div style={{ display: 'flex', gap: '8px' }}>
-                                                                <button onClick={() => handleOpenUserModal(user)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><Edit size={14} /></button>
-                                                                <button onClick={() => handlePasswordManagement(user)} style={{ background: 'none', border: 'none', color: '#D4AF37', cursor: 'pointer' }} title="Change Password"><Key size={14} /></button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-
-                                {/* Permissions Matrix Overview */}
-                                <div style={cardStyle}>
-                                    <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#fff', marginBottom: '25px' }}>Role Permissions Matrix</h3>
-                                    <div style={{ overflowX: 'auto' }}>
-                                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                            <thead>
-                                                <tr style={{ textAlign: 'left', background: 'rgba(255,255,255,0.02)' }}>
-                                                    <th style={thStyle}>Identity Role</th>
-                                                    <th style={thStyle}>Users</th>
-                                                    <th style={thStyle}>Content</th>
-                                                    <th style={thStyle}>Security</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {roles.map(role => (
-                                                    <tr key={role.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
-                                                        <td style={{ ...tdStyle, fontWeight: '700' }}>{role.name}</td>
-                                                        {['users', 'content', 'settings'].map(perm => (
-                                                            <td key={perm} style={tdStyle}>
-                                                                <span style={{
-                                                                    padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: '800',
-                                                                    background: role.permissions[perm] === 'read_write' ? 'rgba(16, 185, 129, 0.1)' : role.permissions[perm] === 'read' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                                                    color: role.permissions[perm] === 'read_write' ? '#10b981' : role.permissions[perm] === 'read' ? '#3b82f6' : '#ef4444'
-                                                                }}>
-                                                                    {role.permissions[perm] === 'read_write' ? 'FULL' : role.permissions[perm] === 'read' ? 'READ' : 'NONE'}
-                                                                </span>
-                                                            </td>
-                                                        ))}
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <button onClick={() => setActiveTab('settings')} style={{ width: '100%', marginTop: '20px', padding: '12px', background: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.1)', color: '#D4AF37', borderRadius: '12px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer' }}>
-                                        CONFIGURE DETAILED POLICIES
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )
-                }
+                {/* --- Client Onboarding (Moved below) --- */}
 
                 {
                     activeTab === 'settings' && (
@@ -3074,8 +3010,29 @@ const Admin = () => {
                                                         required
                                                     />
                                                 </div>
-                                                <button type="submit" style={{ marginTop: '10px', background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)', color: '#000', border: 'none', padding: '14px', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                                    {selectedItem ? 'Authorize Update' : 'Initialize Record'}
+                                                {modalError && (
+                                                    <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '10px', color: '#ef4444', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        <AlertCircle size={16} /> {modalError}
+                                                    </div>
+                                                )}
+                                                <button
+                                                    type="submit"
+                                                    disabled={isSubmitting}
+                                                    style={{
+                                                        marginTop: '10px',
+                                                        background: isSubmitting ? '#4b5563' : 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                                                        color: isSubmitting ? '#9ca3af' : '#000',
+                                                        border: 'none',
+                                                        padding: '14px',
+                                                        borderRadius: '10px',
+                                                        cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                                                        fontWeight: '800',
+                                                        textTransform: 'uppercase',
+                                                        letterSpacing: '1px',
+                                                        opacity: isSubmitting ? 0.7 : 1
+                                                    }}
+                                                >
+                                                    {isSubmitting ? 'Processing...' : (selectedItem ? 'Authorize Update' : 'Create Client Record')}
                                                 </button>
                                             </div>
                                         </form>
@@ -3127,7 +3084,10 @@ const Admin = () => {
                                                         <label style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Master Key (Password)</label>
                                                         <button
                                                             type="button"
-                                                            onClick={() => setFormData({ ...formData, password: AdminService.generateSecurePassword() })}
+                                                            onClick={async () => {
+                                                                const strongKey = await AdminService.generateSecurePassword();
+                                                                setFormData({ ...formData, password: strongKey });
+                                                            }}
                                                             style={{ background: 'none', border: 'none', color: '#D4AF37', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
                                                         >
                                                             <RefreshCw size={12} /> Suggest Secure Key
@@ -3156,8 +3116,29 @@ const Admin = () => {
                                                         </div>
                                                     )}
                                                 </div>
-                                                <button type="submit" style={{ marginTop: '10px', background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)', color: '#000', border: 'none', padding: '14px', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                                    {selectedItem ? 'Authorize Update' : 'Initialize Record'}
+                                                {modalError && (
+                                                    <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '10px', color: '#ef4444', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        <AlertCircle size={16} /> {modalError}
+                                                    </div>
+                                                )}
+                                                <button
+                                                    type="submit"
+                                                    disabled={isSubmitting}
+                                                    style={{
+                                                        marginTop: '10px',
+                                                        background: isSubmitting ? '#4b5563' : 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                                                        color: isSubmitting ? '#9ca3af' : '#000',
+                                                        border: 'none',
+                                                        padding: '14px',
+                                                        borderRadius: '10px',
+                                                        cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                                                        fontWeight: '800',
+                                                        textTransform: 'uppercase',
+                                                        letterSpacing: '1px',
+                                                        opacity: isSubmitting ? 0.7 : 1
+                                                    }}
+                                                >
+                                                    {isSubmitting ? 'Processing...' : (selectedItem ? 'Authorize Update' : 'Secure New Credential')}
                                                 </button>
                                             </div>
                                         </form>
@@ -3169,36 +3150,143 @@ const Admin = () => {
                                                 {selectedItem ? 'Update User Details' : 'Add New User'}
                                             </h2>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                                <div>
-                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Full Legal Name</label>
-                                                    <input
-                                                        type="text"
-                                                        value={formData.name || ''}
-                                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff' }}
-                                                        required
-                                                    />
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Full Legal Name</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.name || ''}
+                                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Corporate Email</label>
+                                                        <input
+                                                            type="email"
+                                                            value={formData.email || ''}
+                                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            required
+                                                        />
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Corporate Email</label>
-                                                    <input
-                                                        type="email"
-                                                        value={formData.email || ''}
-                                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff' }}
-                                                        required
-                                                    />
+
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Department</label>
+                                                        <select
+                                                            value={formData.department || ''}
+                                                            onChange={(e) => setFormData({ ...formData, department: e.target.value, designation: '' })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            required
+                                                        >
+                                                            <option value="" disabled>Select Department</option>
+                                                            {Object.keys(departmentDesignations).map(dept => (
+                                                                <option key={dept} value={dept}>{dept}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Designation</label>
+                                                        <select
+                                                            value={formData.designation || ''}
+                                                            onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            required
+                                                            disabled={!formData.department}
+                                                        >
+                                                            <option value="" disabled>{formData.department ? 'Select Designation' : 'Select Department First'}</option>
+                                                            {formData.department && departmentDesignations[formData.department].map(desg => (
+                                                                <option key={desg} value={desg}>{desg}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
                                                 </div>
+
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Date of Birth</label>
+                                                        <input
+                                                            type="date"
+                                                            value={formData.dob || ''}
+                                                            onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Mobile No</label>
+                                                        <input
+                                                            type="tel"
+                                                            value={formData.mobile || ''}
+                                                            onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                                                            placeholder="+1 234 567 890"
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label style={{ display: 'block', marginBottom: '12px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Portal Access</label>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                        {portals.map(portal => (
+                                                            <div key={portal} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    id={`portal-${portal}`}
+                                                                    checked={formData.access?.includes(portal)}
+                                                                    onChange={(e) => {
+                                                                        const newAccess = e.target.checked
+                                                                            ? [...(formData.access || []), portal]
+                                                                            : (formData.access || []).filter(p => p !== portal);
+                                                                        setFormData({ ...formData, access: newAccess });
+                                                                    }}
+                                                                    style={{ cursor: 'pointer', accentColor: '#D4AF37' }}
+                                                                />
+                                                                <label htmlFor={`portal-${portal}`} style={{ color: '#cbd5e1', fontSize: '0.85rem', cursor: 'pointer' }}>{portal}</label>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {!selectedItem && (
+                                                    <div>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                            <label style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Initial Security Key (Password)</label>
+                                                            <button
+                                                                type="button"
+                                                                onClick={async () => {
+                                                                    const strongPass = await AdminService.generateSecurePassword();
+                                                                    setFormData({ ...formData, password: strongPass });
+                                                                }}
+                                                                style={{ background: 'none', border: 'none', color: '#D4AF37', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                                                            >
+                                                                <RefreshCw size={12} /> Suggest Strong Key
+                                                            </button>
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.password || ''}
+                                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                                            placeholder="Strong password required"
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            required={!selectedItem}
+                                                        />
+                                                    </div>
+                                                )}
+
                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                                                     <div>
                                                         <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Access Role</label>
                                                         <select
-                                                            value={formData.role || 'Admin'}
+                                                            value={formData.role || 'Employee'}
                                                             onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
                                                         >
                                                             <option value="Admin">Administrator</option>
                                                             <option value="Manager">Manager</option>
+                                                            <option value="Employee">Employee</option>
                                                             <option value="Developer">Developer</option>
                                                             <option value="Support">Support</option>
                                                             <option value="Research">Research Analyst</option>
@@ -3209,7 +3297,7 @@ const Admin = () => {
                                                         <select
                                                             value={formData.status || 'Active'}
                                                             onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
                                                         >
                                                             <option value="Active">Active</option>
                                                             <option value="Pending">Pending</option>
@@ -3217,8 +3305,31 @@ const Admin = () => {
                                                         </select>
                                                     </div>
                                                 </div>
-                                                <button type="submit" style={{ marginTop: '10px', background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)', color: '#000', border: 'none', padding: '14px', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                                    {selectedItem ? 'Authorize Update' : 'Initialize Record'}
+
+                                                {modalError && (
+                                                    <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '10px', color: '#ef4444', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        <AlertCircle size={16} /> {modalError}
+                                                    </div>
+                                                )}
+
+                                                <button
+                                                    type="submit"
+                                                    disabled={isSubmitting}
+                                                    style={{
+                                                        marginTop: '10px',
+                                                        background: isSubmitting ? '#4b5563' : 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                                                        color: isSubmitting ? '#9ca3af' : '#000',
+                                                        border: 'none',
+                                                        padding: '14px',
+                                                        borderRadius: '10px',
+                                                        cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                                                        fontWeight: '800',
+                                                        textTransform: 'uppercase',
+                                                        letterSpacing: '1px',
+                                                        opacity: isSubmitting ? 0.7 : 1
+                                                    }}
+                                                >
+                                                    {isSubmitting ? 'Processing...' : (selectedItem ? 'Authorize Update' : 'Authorize Identity Onboarding')}
                                                 </button>
                                             </div>
                                         </form>
@@ -3982,7 +4093,84 @@ const Admin = () => {
 
 
 
-                {/* --- Lead Management: Consultancy Form --- */}
+                {activeTab === 'client-onboarding' && (
+                    <div style={cardStyle}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap', gap: '20px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <div style={{
+                                    width: '45px', height: '45px', background: 'rgba(212, 175, 55, 0.1)',
+                                    borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    border: '1px solid rgba(212, 175, 55, 0.2)'
+                                }}>
+                                    <UserPlus size={22} color="#D4AF37" />
+                                </div>
+                                <div>
+                                    <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800', margin: 0 }}>Client Onboarding Pipeline</h3>
+                                    <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: 0 }}>Manage the intake and setup of new enterprise clients</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => handleOpenClientModal()}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '10px',
+                                    background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                                    color: '#000', border: 'none', padding: '12px 20px',
+                                    borderRadius: '12px', cursor: 'pointer', fontWeight: '800',
+                                    fontSize: '0.9rem', boxShadow: '0 10px 20px -5px rgba(212, 175, 55, 0.3)'
+                                }}
+                            >
+                                <UserPlus size={18} /> Onboard New Client
+                            </button>
+                        </div>
+
+                        <div style={{ overflowX: 'auto', paddingBottom: '10px' }} className="custom-scrollbar">
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
+                                        <th style={thStyle}>Client Partner</th>
+                                        <th style={thStyle}>Liaison</th>
+                                        <th style={thStyle}>Onboarding Stage</th>
+                                        <th style={thStyle}>Account Status</th>
+                                        <th style={{ ...thStyle, textAlign: 'right' }}>Directives</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {clients.map((c) => (
+                                        <tr key={c.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)', transition: 'all 0.3s' }}>
+                                            <td style={{ ...tdStyle, fontWeight: '800', color: '#D4AF37' }}>
+                                                {c.name}
+                                            </td>
+                                            <td style={tdStyle}>
+                                                <div style={{ fontWeight: '700', color: '#fff' }}>{c.contactPerson || 'System Admin'}</div>
+                                            </td>
+                                            <td style={tdStyle}>
+                                                <div style={{ fontSize: '0.9rem', color: '#cbd5e1' }}>{c.status === 'Active' ? 'Fully Setup' : 'Requirements Gathering'}</div>
+                                                <div style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', marginTop: '5px' }}>
+                                                    <div style={{ width: c.status === 'Active' ? '100%' : '40%', height: '100%', background: c.status === 'Active' ? '#10b981' : '#f59e0b', borderRadius: '2px' }}></div>
+                                                </div>
+                                            </td>
+                                            <td style={tdStyle}>
+                                                <span style={statusBadge(c.status)}>{c.status}</span>
+                                            </td>
+                                            <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                                    <button onClick={() => handleOpenClientModal(c)} title="Continue Onboarding" style={{ color: '#3b82f6', background: 'rgba(59, 130, 246, 0.1)', border: 'none', cursor: 'pointer', padding: '8px 16px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800' }}>
+                                                        MANAGE
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {clients.length === 0 && (
+                                        <tr>
+                                            <td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>No clients currently in pipeline.</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
 
             </div >
 

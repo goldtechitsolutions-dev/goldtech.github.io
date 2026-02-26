@@ -22,7 +22,7 @@ import ClientPortal from './components/ClientPortal';
 import CandidatePortal from './components/CandidatePortal';
 import ProjectManagementPortal from './components/ProjectManagementPortal';
 import ResearchPortal from './components/ResearchPortal';
-// import TaskManagementPortal from './components/TaskManagementPortal';
+import PortalAuth from './components/PortalAuth';
 import './App.css';
 import './components.css';
 
@@ -31,16 +31,19 @@ function App() {
     <>
       <Routes>
         <Route path="/admin" element={<Admin />} />
-        <Route path="/hr" element={<HRPortal />} />
-        <Route path="/employee" element={<EmployeePortal />} />
-        <Route path="/manager" element={<ManagerPortal />} />
-        <Route path="/finance" element={<FinancePortal />} />
-        <Route path="/sales" element={<SalesPortal />} />
+
+        {/* Managed Portals with Auth */}
+        <Route path="/hr" element={<PortalAuth portalName="HR portal"><HRPortal /></PortalAuth>} />
+        <Route path="/employee" element={<PortalAuth portalName="Employee portal"><EmployeePortal /></PortalAuth>} />
+        <Route path="/manager" element={<PortalAuth portalName="Manager portal"><ManagerPortal /></PortalAuth>} />
+        <Route path="/finance" element={<PortalAuth portalName="Finance portal"><FinancePortal /></PortalAuth>} />
+        <Route path="/sales" element={<PortalAuth portalName="Sales portal"><SalesPortal /></PortalAuth>} />
+        <Route path="/project-management" element={<PortalAuth portalName="Project-management"><ProjectManagementPortal /></PortalAuth>} />
+        <Route path="/tasks" element={<PortalAuth portalName="Tasks portal"><ProjectManagementPortal /></PortalAuth>} />
+        <Route path="/research" element={<PortalAuth portalName="Research & development portal"><ResearchPortal /></PortalAuth>} />
+
         <Route path="/client" element={<ClientPortal />} />
         <Route path="/create-profile" element={<CandidatePortal />} />
-        <Route path="/project-management" element={<ProjectManagementPortal />} />
-        <Route path="/tasks" element={<ProjectManagementPortal />} />
-        <Route path="/research" element={<ResearchPortal />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
 

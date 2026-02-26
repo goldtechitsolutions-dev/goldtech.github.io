@@ -75,10 +75,10 @@ const ActionButton = ({ onClick, children, variant = 'primary', icon: Icon }) =>
     );
 };
 
-const EmployeePortal = () => {
+const EmployeePortal = ({ currentUser: authUser }) => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('dashboard');
-    const [currentUser, setCurrentUser] = useState(null);
+    const [currentUser, setCurrentUser] = useState(authUser || null);
 
     // Data State
     const [tasks, setTasks] = useState([]);
@@ -98,7 +98,7 @@ const EmployeePortal = () => {
     // Leave Form State
     const [showLeaveForm, setShowLeaveForm] = useState(false);
     const [newLeave, setNewLeave] = useState({
-        name: '',
+        name: authUser?.name || '',
         type: 'Sick Leave',
         startDate: '',
         endDate: '',
@@ -106,18 +106,12 @@ const EmployeePortal = () => {
     });
 
     useEffect(() => {
-        const init = async () => {
-            // Mock Login as "John Dev" (ID: 102)
-            const mockUserId = 102;
-            const users = await AdminService.getUsers();
-            const user = users.find(u => u.id === mockUserId) || { name: 'John Dev', id: 102 };
-            setCurrentUser(user);
-            setNewLeave(prev => ({ ...prev, name: user.name }));
-
-            await refreshData(mockUserId);
-        };
-        init();
-    }, []);
+        if (authUser) {
+            setCurrentUser(authUser);
+            setNewLeave(prev => ({ ...prev, name: authUser.name }));
+            refreshData(authUser.id);
+        }
+    }, [authUser]);
 
     const refreshData = async (userId) => {
         if (isRefreshing) return;
@@ -152,7 +146,7 @@ const EmployeePortal = () => {
             ]);
 
             setTasks(tsks || []);
-            setLeaves((allLv || []).filter(l => l.name === 'John Dev'));
+            setLeaves((allLv || []).filter(l => l.name === authUser?.name));
             setWfhRequest(wfh || []);
             setHolidays(hols || []);
             setPayrollHistory(payroll || []);
@@ -247,7 +241,7 @@ const EmployeePortal = () => {
                         {currentUser?.name?.charAt(0) || 'U'}
                     </div>
                     <h3 style={{ color: '#fff', margin: 0 }}>{currentUser?.name || 'User'}</h3>
-                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>Frontend Engineer</p>
+                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>{currentUser?.designation || 'Software Engineer'}</p>
                 </div>
 
                 <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, overflowY: 'auto' }}>

@@ -183,7 +183,7 @@ const InvoiceDocument = React.forwardRef(({ invoice }, ref) => (
     </div>
 ));
 
-const FinancePortal = () => {
+const FinancePortal = ({ currentUser }) => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('dashboard');
 
@@ -247,7 +247,7 @@ const FinancePortal = () => {
             await refreshData();
         };
         loadInitialData();
-    }, []);
+    }, [currentUser]);
 
     const refreshData = async () => {
         if (isRefreshing) return;
@@ -463,9 +463,11 @@ const FinancePortal = () => {
                 </div>
 
                 <div style={{ marginBottom: '30px', textAlign: 'center' }}>
-                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#D4AF37', margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 'bold', color: '#0f172a' }}>F</div>
-                    <h3 style={{ color: '#fff', margin: 0 }}>Fiona Finance</h3>
-                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>CFO</p>
+                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#D4AF37', margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 'bold', color: '#0f172a' }}>
+                        {currentUser?.name?.charAt(0) || 'F'}
+                    </div>
+                    <h3 style={{ color: '#fff', margin: 0 }}>{currentUser?.name || 'Finance User'}</h3>
+                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>{currentUser?.designation || 'CFO'}</p>
                 </div>
 
                 <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>

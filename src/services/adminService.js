@@ -131,25 +131,29 @@ const initialUsers = [
         id: 101, name: 'Admin User', email: 'admin@goldtech.com', role: 'Admin', department: 'Management', status: 'Active',
         password: 'adminPassword1!', securityKey: '185576',
         securityQuestions: { petName: 'Ramu', changeMind: 'DigN3' },
-        mfa: true, lastLogin: '2023-11-01 09:00 AM', passwordAge: 45, passwordStrength: 'Strong'
+        mfa: true, lastLogin: '2023-11-01 09:00 AM', passwordAge: 45, passwordStrength: 'Strong',
+        designation: 'Chief Technology Officer', dob: '1985-05-20', mobile: '9640786029', employee_id: 'GT-1001', access: ['Admin', 'Sales', 'HR', 'Finance', 'Manager']
     },
     {
         id: 102, name: 'John Dev', email: 'john.dev@goldtech.com', role: 'Developer', department: 'Engineering', status: 'Active',
         password: 'devPassword2@', securityKey: '185576',
         securityQuestions: { petName: 'Ramu', changeMind: 'DigN3' },
-        mfa: false, lastLogin: '2023-11-01 10:15 AM', passwordAge: 120, passwordStrength: 'Weak'
+        mfa: false, lastLogin: '2023-11-01 10:15 AM', passwordAge: 120, passwordStrength: 'Weak',
+        designation: 'Senior Frontend Engineer', dob: '1992-08-15', mobile: '9876543210', employee_id: 'GT-1002', access: ['Employee', 'Tasks', 'Project-management']
     },
     {
         id: 103, name: 'Sarah HR', email: 'sarah.hr@goldtech.com', role: 'HR', department: 'Human Resources', status: 'Active',
         password: 'hrPassword3#', securityKey: '185576',
         securityQuestions: { petName: 'Ramu', changeMind: 'DigN3' },
-        mfa: true, lastLogin: '2023-10-31 04:45 PM', passwordAge: 15, passwordStrength: 'Strong'
+        mfa: true, lastLogin: '2023-10-31 04:45 PM', passwordAge: 15, passwordStrength: 'Strong',
+        designation: 'HR Manager', dob: '1990-03-25', mobile: '5551234567', employee_id: 'GT-1003', access: ['HR', 'Employee']
     },
     {
         id: 104, name: 'Mike Manager', email: 'mike.manager@goldtech.com', role: 'Manager', department: 'Sales', status: 'Inactive',
         password: 'salesPassword4$', securityKey: '185576',
         securityQuestions: { petName: 'Ramu', changeMind: 'DigN3' },
-        mfa: false, lastLogin: '2023-10-25 11:30 AM', passwordAge: 200, passwordStrength: 'Medium'
+        mfa: false, lastLogin: '2023-10-25 11:30 AM', passwordAge: 200, passwordStrength: 'Medium',
+        designation: 'Sales Director', dob: '1988-11-10', mobile: '4449876543', employee_id: 'GT-1004', access: ['Sales', 'Manager']
     },
 ];
 const initialClients = [
@@ -1067,35 +1071,127 @@ const AdminService = {
     // --- User Management ---
     getUsers: async () => {
         try {
-            const response = await AdminService._fetchWithTimeout(`${API_URL}/users`);
-            if (!response.ok) throw new Error('Failed to fetch users');
-            return await response.json();
+            const { data, error } = await supabase
+                .from('Users')
+                .select('*')
+                .order('id', { ascending: true });
+
+            if (error) throw error;
+            return data;
         } catch (error) {
-            console.error(error);
+            console.error('Supabase fetch users error, falling back:', error);
             return AdminService._getData('gt_users', initialUsers);
         }
     },
 
     addUser: async (user) => {
-        const users = await AdminService.getUsers();
-        const newUser = { ...user, id: Date.now(), status: 'Active' };
-        const newUsers = [...users, newUser];
-        AdminService._saveData('gt_users', newUsers);
-        return newUsers;
+        try {
+            const users = await AdminService.getUsers();
+
+            // Generate sequential Employee ID
+            let nextId = 1001;
+            const empIds = users
+                .map(u => u.employee_id)
+                .filter(id => id && id.startsWith('GT-'))
+                .map(id => parseInt(id.split('-')[1]))
+                .filter(num => !isNaN(num));
+
+            if (empIds.length > 0) {
+                nextId = Math.max(...empIds) + 1;
+            }
+            const generatedEmpId = `GT-${nextId}`;
+
+            const userData = {
+                name: user.name,
+                email: user.email,
+                password: user.password || 'Temporary@123',
+                role: user.role,
+                department: user.department,
+                designation: user.designation,
+                dob: user.dob,
+                mobile: user.mobile,
+                employee_id: generatedEmpId,
+                access: user.access || [],
+                status: user.status || 'Active'
+            };
+
+            const { data, error } = await supabase
+                .from('Users')
+                .insert([userData])
+                .select();
+
+            if (error) throw error;
+
+            // Sync local storage
+            const updatedUsers = [...users, data[0]];
+            AdminService._saveData('gt_users', updatedUsers);
+
+            return data[0];
+        } catch (error) {
+            console.error('Supabase add user error, falling back:', error);
+            const users = await AdminService.getUsers();
+            const newUser = { ...user, id: Date.now(), status: 'Active' };
+            const newUsers = [...users, newUser];
+            AdminService._saveData('gt_users', newUsers);
+            return newUser;
+        }
     },
 
     updateUser: async (updatedUser) => {
-        const users = await AdminService.getUsers();
-        const newUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
-        AdminService._saveData('gt_users', newUsers);
-        return newUsers;
+        try {
+            const { data, error } = await supabase
+                .from('Users')
+                .update({
+                    name: updatedUser.name,
+                    email: updatedUser.email,
+                    role: updatedUser.role,
+                    department: updatedUser.department,
+                    designation: updatedUser.designation,
+                    dob: updatedUser.dob,
+                    mobile: updatedUser.mobile,
+                    access: updatedUser.access,
+                    status: updatedUser.status
+                })
+                .eq('id', updatedUser.id)
+                .select();
+
+            if (error) throw error;
+
+            // Sync local storage
+            const users = await AdminService.getUsers();
+            const newUsers = users.map(u => u.id === updatedUser.id ? data[0] : u);
+            AdminService._saveData('gt_users', newUsers);
+
+            return data[0];
+        } catch (error) {
+            console.error('Supabase update user error, falling back:', error);
+            const users = await AdminService.getUsers();
+            const newUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
+            AdminService._saveData('gt_users', newUsers);
+            return updatedUser;
+        }
     },
 
     deleteUser: async (id) => {
-        const users = await AdminService.getUsers();
-        const newUsers = users.filter(u => u.id !== id);
-        AdminService._saveData('gt_users', newUsers);
-        return newUsers;
+        try {
+            const { error } = await supabase
+                .from('Users')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            const users = await AdminService.getUsers();
+            const newUsers = users.filter(u => u.id !== id);
+            AdminService._saveData('gt_users', newUsers);
+            return true;
+        } catch (error) {
+            console.error('Supabase delete user error, falling back:', error);
+            const users = await AdminService.getUsers();
+            const newUsers = users.filter(u => u.id !== id);
+            AdminService._saveData('gt_users', newUsers);
+            return newUsers;
+        }
     },
 
     resetUserPassword: async (id) => {
@@ -1188,6 +1284,46 @@ const AdminService = {
         }
 
         return { success: false, message: 'User not found' };
+    },
+
+    authenticate: async (identifier, password) => {
+        // Hardcoded Demo Admin
+        if (identifier === 'admin' && password === 'admin123') {
+            return {
+                success: true,
+                user: {
+                    id: 'admin-id',
+                    name: 'Admin User',
+                    email: 'admin@goldtech.com',
+                    role: 'Admin',
+                    access: ['Admin', 'Sales portal', 'HR portal', 'Tasks portal', 'Project-management', 'Finance portal', 'Manager portal', 'Employee portal', 'Research & development portal']
+                }
+            };
+        }
+
+        try {
+            const { data, error } = await supabase
+                .from('Users')
+                .select('*')
+                .or(`email.eq."${identifier}",name.eq."${identifier}"`)
+                .eq('password', password)
+                .eq('status', 'Active')
+                .maybeSingle();
+
+            if (error) throw error;
+            if (data) {
+                return { success: true, user: data };
+            }
+        } catch (error) {
+            console.error('Authentication error:', error);
+        }
+
+        // Fallback to local storage (Mock Data)
+        const users = await AdminService.getUsers();
+        const user = users.find(u => (u.email === identifier || u.name === identifier) && u.password === password && u.status === 'Active');
+        if (user) return { success: true, user };
+
+        return { success: false, message: 'Invalid credentials or inactive account' };
     },
 
     // --- Client Management ---

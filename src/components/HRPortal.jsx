@@ -76,7 +76,7 @@ const ActionButton = ({ onClick, children, variant = 'primary', icon: Icon }) =>
     );
 };
 
-const HRPortal = () => {
+const HRPortal = ({ currentUser }) => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
 
@@ -104,7 +104,7 @@ const HRPortal = () => {
     // Leave Form State
     const [showLeaveForm, setShowLeaveForm] = useState(false);
     const [newLeave, setNewLeave] = useState({
-        name: 'Sarah HR', // Defaulting to current user for demo
+        name: currentUser?.name || 'HR User',
         type: 'Sick Leave',
         startDate: '',
         endDate: '',
@@ -113,7 +113,10 @@ const HRPortal = () => {
 
     useEffect(() => {
         refreshData();
-    }, []);
+        if (currentUser) {
+            setNewLeave(prev => ({ ...prev, name: currentUser.name }));
+        }
+    }, [currentUser]);
 
     const refreshData = async () => {
         if (isRefreshing) return;
