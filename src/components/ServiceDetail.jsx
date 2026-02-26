@@ -24,7 +24,7 @@ const serviceData = {
         title: "Cloud Infrastructure",
         subtitle: "Elastic, Secure, and High-Performance Cloud Solutions",
         overview: "GoldTech empowers your enterprise with robust cloud foundations. We go beyond simple hosting, designing intelligent, multi-cloud and hybrid environments that optimize costs, ensure 99.99% availability, and provide the agility needed for modern digital operations.",
-        details: "Whether you are migrating from on-premise or optimizing an existing cloud footprint, our certified architects provide global-scale infrastructure management across AWS, Azure, and Google Cloud.",
+        details: "Whether you are migrating from on-premise or optimizing an existing cloud footprint, our certified architects provide global-scale infrastructure management leveraging high-performance platforms like Supabase and GitHub Enterprise.",
         bgImage: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?q=80&w=2500&auto=format&fit=crop",
         contentBgImage: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000&auto=format&fit=crop",
         benefits: [

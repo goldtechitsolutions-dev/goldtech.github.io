@@ -216,7 +216,7 @@ const ChatBot = () => {
             { keys: ['web', 'website', 'web dev', 'web application', 'build a site', 'app', 'mobile app', 'android', 'ios', 'application'], answer: "We build high-performance, responsive websites and mobile applications (iOS/Android) using the latest technologies. Are you looking for a custom web or mobile solution?" },
             { keys: ['salesforce', 'sap', 'crm', 'erp'], answer: "We provide expert Salesforce and SAP implementation, customization, and management to optimize your enterprise workflows and CRM needs." },
             { keys: ['ai', 'artificial intelligence', 'ml', 'machine learning', 'genai'], answer: "We specialize in AI solutions including AI Strategy & engineering, Data for AI, Process for AI, Agentic legacy modernization, Physical AI, and AI Trust. How can AI help your business?" },
-            { keys: ['cloud', 'aws', 'azure', 'gcp'], answer: "We offer comprehensive cloud services including migration, management, and architecture on AWS, Azure, and Google Cloud." },
+            { keys: ['cloud', 'supabase', 'github', 'hosting'], answer: "We offer comprehensive cloud services specializing in high-performance architectures on Supabase and GitHub Enterprise." },
 
             // HR & Recruitment FAQs
             { keys: ['insurance', 'health', 'medical', 'benefits'], answer: "Yes! We offer comprehensive health insurance covering medical, dental, and vision for all full-time employees and their dependents." },

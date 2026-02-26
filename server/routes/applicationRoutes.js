@@ -21,8 +21,8 @@ router.post('/', upload.single('resume'), async (req, res) => {
         if (req.file) {
             const fileName = `${Date.now()}-${req.file.originalname}`;
             const { data, error } = await supabase.storage
-                .from('resumes')
-                .upload(`resumes/${fileName}`, req.file.buffer, {
+                .from('RESUMES')
+                .upload(fileName, req.file.buffer, {
                     contentType: req.file.mimetype,
                     upsert: true
                 });
@@ -30,8 +30,8 @@ router.post('/', upload.single('resume'), async (req, res) => {
             if (error) throw error;
 
             const { data: { publicUrl } } = supabase.storage
-                .from('resumes')
-                .getPublicUrl(`resumes/${fileName}`);
+                .from('RESUMES')
+                .getPublicUrl(fileName);
 
             resumeUrl = publicUrl;
         }

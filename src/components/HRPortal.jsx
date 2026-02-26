@@ -739,7 +739,7 @@ const HRPortal = () => {
                                         <div>
                                             <input
                                                 type="text"
-                                                placeholder="Required Skills (comma separated, e.g. React, Node.js, AWS)"
+                                                placeholder="Required Skills (comma separated, e.g. React, Node.js, Supabase)"
                                                 value={newJob.skills}
                                                 onChange={(e) => setNewJob({ ...newJob, skills: e.target.value })}
                                                 style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}

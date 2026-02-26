@@ -315,7 +315,7 @@ const initialOKRs = [
 
 const initialLMSCourses = [
     { id: 1, title: 'Advanced React Patterns', instructor: 'Kent C. Dodds', duration: '4h 30m', progress: 0, thumbnail: 'https://placehold.co/300x200/1e293b/FFF?text=React', category: 'Frontend' },
-    { id: 2, title: 'AWS Solutions Architect', instructor: 'Stephane Maarek', duration: '20h', progress: 45, thumbnail: 'https://placehold.co/300x200/1e293b/FFF?text=AWS', category: 'Cloud' },
+    { id: 2, title: 'Supabase Cloud Architect', instructor: 'Stephane Maarek', duration: '20h', progress: 45, thumbnail: 'https://placehold.co/300x200/1e293b/FFF?text=Supabase', category: 'Backend' },
     { id: 3, title: 'Secure Coding Practices', instructor: 'GoldTech Security', duration: '2h', progress: 100, thumbnail: 'https://placehold.co/300x200/1e293b/FFF?text=Security', category: 'Security' }
 ];
 
@@ -377,9 +377,9 @@ const initialSurveys = [
 // --- Infrastructure & DevOps Oversight ---
 const initialInfraStats = {
     servers: [
-        { id: 1, name: 'Production-DB-Primary', type: 'Database', status: 'Healthy', cpu: 45, memory: 60, region: 'us-east-1', cost: 1200, uptime: '99.99%', latency: '5ms' },
-        { id: 2, name: 'Web-Server-Cluster', type: 'Compute', status: 'Healthy', cpu: 30, memory: 40, region: 'us-east-1', cost: 800, uptime: '99.95%', latency: '12ms' },
-        { id: 3, name: 'Analytics-Engine', type: 'Compute', status: 'Warning', cpu: 85, memory: 70, region: 'eu-west-1', cost: 1500, uptime: '98.50%', latency: '45ms' }
+        { id: 1, name: 'Main-Database-Cluster', type: 'Database', status: 'Healthy', cpu: 45, memory: 60, region: 'global', cost: 1200, uptime: '100%', latency: '2ms' },
+        { id: 2, name: 'Edge-Functions-Fleet', type: 'Compute', status: 'Healthy', cpu: 30, memory: 40, region: 'global', cost: 800, uptime: '99.95%', latency: '8ms' },
+        { id: 3, name: 'Realtime-Sync-Engine', type: 'Compute', status: 'Warning', cpu: 85, memory: 70, region: 'global', cost: 1500, uptime: '98.50%', latency: '35ms' }
     ],
     cloudCosts: [
         { provider: 'Supabase', amount: 35, trend: '+5%', details: 'Database & Storage' },
@@ -471,7 +471,7 @@ const initialScopingTemplates = [
 
 const initialBenchResources = [
     { id: 105, name: 'David Designer', role: 'UI/UX Designer', availability: 'Immediate', skills: ['Figma', 'Adobe XD', 'Prototyping'], title: 'Senior Designer' },
-    { id: 106, name: 'Sam Server', role: 'DevOps Engineer', availability: '2 Weeks', skills: ['AWS', 'Docker', 'K8s'], title: 'DevOps Specialist' }
+    { id: 106, name: 'Sam Server', role: 'DevOps Engineer', availability: '2 Weeks', skills: ['Supabase', 'Docker', 'K8s'], title: 'DevOps Specialist' }
 ];
 
 const initialRateCards = [
@@ -494,8 +494,8 @@ const initialCaseStudies = [
 ];
 
 const initialPartnerStats = [
-    { name: 'AWS', tier: 'Advanced', revenueInfluenced: 150000 },
-    { name: 'Microsoft', tier: 'Gold', revenueInfluenced: 85000 }
+    { name: 'GitHub', tier: 'Enterprise Partner', revenueInfluenced: 150000 },
+    { name: 'Supabase', tier: 'Platform Partner', revenueInfluenced: 85000 }
 ];
 
 const initialMarketIntelligence = [
@@ -819,25 +819,24 @@ const AdminService = {
                 candidateData = Object.fromEntries(candidate.entries());
                 const resumeFile = candidate.get('resume');
 
-                if (resumeFile && resumeFile instanceof File) {
+                if (resumeFile && resumeFile instanceof File && resumeFile.size > 0) {
                     const fileExt = resumeFile.name.split('.').pop();
                     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
                     const filePath = `${fileName}`;
 
-                    const { error: uploadError } = await supabase.storage
-                        .from('resumes')
+                    const { data: uploadData, error: uploadError } = await supabase.storage
+                        .from('RESUMES')
                         .upload(filePath, resumeFile, {
-                            contentType: resumeFile.type,
-                            upsert: true
+                            cacheControl: '3600',
+                            upsert: false
                         });
 
                     if (uploadError) {
-                        console.error("Storage upload error (Bucket/Policy issue?):", uploadError);
-                        // Fallback to just the filename if upload fails, but don't attempt slow base64 conversion
+                        console.error("Supabase Storage Upload Error:", uploadError.message);
                         candidateData.resume_url = resumeFile.name;
                     } else {
                         const { data: { publicUrl } } = supabase.storage
-                            .from('resumes')
+                            .from('RESUMES')
                             .getPublicUrl(filePath);
                         resumeUrl = publicUrl;
                         candidateData.resume_url = resumeUrl;
@@ -877,12 +876,14 @@ const AdminService = {
         } catch (error) {
             console.error("Candidate submission failed. Error context:", error);
 
-
             let candidateData = candidate;
+            let resumeName = 'resume.pdf';
+
             if (candidate instanceof FormData) {
                 candidateData = Object.fromEntries(candidate.entries());
                 if (candidateData.resume && candidateData.resume instanceof File) {
-                    candidateData.resume = candidateData.resume.name;
+                    resumeName = candidateData.resume.name;
+                    candidateData.resume = resumeName;
                 }
             }
 
@@ -893,8 +894,11 @@ const AdminService = {
                 stage: 'review pending',
                 applied_date: new Date().toISOString().split('T')[0],
                 score: Math.floor(Math.random() * (95 - 60 + 1)) + 60,
-                interviewScores: {}
+                interviewScores: {},
+                resume: resumeName,
+                resume_url: resumeName // Fallback to filename so it's not "EMPTY"
             };
+
             const newList = [newCandidate, ...candidates];
             AdminService._saveData('gt_candidates', newList);
 
@@ -1420,7 +1424,7 @@ const AdminService = {
     async getApprovals() {
         return [
             { id: 1, type: 'Leave', requestor: 'John Dev', details: 'Sick Leave (2 days)', date: '2023-11-01', status: 'Pending' },
-            { id: 2, type: 'Expense', requestor: 'Alice Smith', details: 'aws_cert_exam.pdf ($150)', date: '2023-10-30', status: 'Pending' },
+            { id: 2, type: 'Expense', requestor: 'Alice Smith', details: 'supabase_security_cert.pdf ($150)', date: '2023-10-30', status: 'Pending' },
             { id: 3, type: 'Timesheet', requestor: 'Kyle Reese', details: 'Oct 15-30 (80 hrs)', date: '2023-10-31', status: 'Pending' },
             { id: 4, type: 'PR', requestor: 'T-800', details: 'Feat: Skynet Integ #402', repo: 'gold-erp-core', date: '2023-11-02', status: 'Pending' }
         ];
@@ -2400,7 +2404,7 @@ const AdminService = {
     async getClientAssets(clientName) {
         return [
             { id: 1, name: 'goldtech-app.com', type: 'Domain', value: 'Expires 2025', sensitivity: 'Low' },
-            { id: 2, name: 'AWS Production', type: 'Hosting', value: 'us-east-1', sensitivity: 'Medium' },
+            { id: 2, name: 'Supabase Production', type: 'Hosting', value: 'global', sensitivity: 'Medium' },
             { id: 3, name: 'Stripe API Key', type: 'Credential', value: 'sk_live_...', sensitivity: 'High' }
         ];
     },

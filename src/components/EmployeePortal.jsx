@@ -702,13 +702,13 @@ const EmployeePortal = () => {
                                 </div>
                                 <div>
                                     <GlassCard style={{ height: '100%' }}>
-                                        <h3 style={{ margin: '0 0 20px', display: 'flex', alignItems: 'center', gap: '10px' }}><Shield size={20} color="#fcd34d" /> Cloud Access (Temporary)</h3>
+                                        <h3 style={{ margin: '0 0 20px', display: 'flex', alignItems: 'center', gap: '10px' }}><Shield size={20} color="#3ECF8E" /> Platform Access (Temporary)</h3>
                                         <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '20px' }}>
-                                            Request temporary access keys for development environments. Keys expire in 1 hour.
+                                            Request temporary access tokens for development environments. Tokens expire in 1 hour.
                                         </p>
                                         <div style={{ display: 'flex', gap: '10px' }}>
-                                            <ActionButton variant="primary" onClick={() => alert('Mock AWS Keys Generated!')}>Generate AWS Keys</ActionButton>
-                                            <ActionButton variant="ghost" onClick={() => { }}>Azure Keys</ActionButton>
+                                            <ActionButton variant="primary" onClick={() => alert('Mock Supabase Token Generated!')}>Supabase Token</ActionButton>
+                                            <ActionButton variant="ghost" onClick={() => alert('Mock GitHub PAT Generated!')}>GitHub PAT</ActionButton>
                                         </div>
                                     </GlassCard>
                                 </div>

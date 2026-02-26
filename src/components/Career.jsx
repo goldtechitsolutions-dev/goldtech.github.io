@@ -146,7 +146,7 @@ const Career = () => {
                         <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginBottom: '50px' }}>
                             <Link to="/create-profile" style={{ textDecoration: 'none' }}>
                                 <button style={{
-                                    padding: '12px 30px',
+                                    padding: '12px 40px',
                                     border: '1px solid rgba(255,255,255,0.2)',
                                     background: 'rgba(255,255,255,0.1)',
                                     color: '#fff',
@@ -171,7 +171,7 @@ const Career = () => {
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}><Code size={28} color="#61DAFB" /><span style={{ fontSize: '0.8rem' }}>React</span></div>
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}><Cpu size={28} color="#fff" /><span style={{ fontSize: '0.8rem' }}>Next.js</span></div>
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}><Database size={28} color="#00C7B7" /><span style={{ fontSize: '0.8rem' }}>MongoDB</span></div>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}><Globe size={28} color="#FF9900" /><span style={{ fontSize: '0.8rem' }}>AWS</span></div>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}><Database size={28} color="#3ECF8E" /><span style={{ fontSize: '0.8rem' }}>Supabase</span></div>
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}><Cpu size={28} color="#339933" /><span style={{ fontSize: '0.8rem' }}>Node.js</span></div>
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}><Database size={28} color="#007ACC" /><span style={{ fontSize: '0.8rem' }}>TypeScript</span></div>
                             </div>
