@@ -406,6 +406,7 @@ const Admin = () => {
             designation: '',
             dob: '',
             mobile: '',
+            employeeId: '',
             access: [],
             status: 'Active'
         });
@@ -3181,6 +3182,17 @@ const Admin = () => {
                                                             required
                                                         />
                                                     </div>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Employee ID</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.employeeId || ''}
+                                                            onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            placeholder="e.g. EMP-1011"
+                                                            required
+                                                        />
+                                                    </div>
                                                 </div>
 
                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
@@ -4224,7 +4236,7 @@ const Admin = () => {
                                                             </div>
                                                             <div>
                                                                 <div>{user.name}</div>
-                                                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 'normal' }}>ID: {String(user.id).substring(0, 8)}...</div>
+                                                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 'normal' }}>Employee ID: {user.employeeId || String(user.id).substring(0, 8)}</div>
                                                             </div>
                                                         </div>
                                                     </td>
