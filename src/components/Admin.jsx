@@ -4224,7 +4224,7 @@ const Admin = () => {
                                                             </div>
                                                             <div>
                                                                 <div>{user.name}</div>
-                                                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 'normal' }}>ID: {user.id.substring(0, 8)}...</div>
+                                                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 'normal' }}>ID: {String(user.id).substring(0, 8)}...</div>
                                                             </div>
                                                         </div>
                                                     </td>
