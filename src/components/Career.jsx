@@ -10,6 +10,8 @@ const Career = () => {
     // showForm can be false, 'apply', or 'profile'
     const [showForm, setShowForm] = React.useState(false);
     const [status, setStatus] = React.useState("");
+    console.log("Career Component Loaded (Version: BOTTOM_POSITION)");
+
     const [jobs, setJobs] = React.useState(() => {
         const cached = AdminService.getJobsImmediate();
         return Array.isArray(cached) ? cached.filter(j => j.status === 'Active') : [];
@@ -373,7 +375,21 @@ const Career = () => {
                                     </div>
                                 </div>
 
+                                {status === "SUCCESS" && (
+                                    <div style={{ padding: '15px', background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', borderRadius: '12px', border: '1px solid #22c55e', textAlign: 'center', marginBottom: '15px' }}>
+                                        <div style={{ fontWeight: '800', fontSize: '1.2rem', marginBottom: '4px' }}>✓ Application Submitted Successfully!</div>
+                                        <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Our talent team will review your profile shortly.</div>
+                                    </div>
+                                )}
+                                {status === "ERROR" && (
+                                    <div style={{ padding: '15px', background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', borderRadius: '12px', border: '1px solid #ef4444', textAlign: 'center', marginBottom: '15px' }}>
+                                        <div style={{ fontWeight: '800', fontSize: '1.2rem', marginBottom: '4px' }}>✕ Submission Failed</div>
+                                        <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Please check your connection and try again.</div>
+                                    </div>
+                                )}
+
                                 <button type="submit" disabled={status === "SUCCESS" || status === "SUBMITTING"} style={{
+
                                     marginTop: '20px',
                                     padding: '15px',
                                     background: (status === "SUCCESS" || status === "SUBMITTING") ? '#1e293b' : 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)',
@@ -388,18 +404,6 @@ const Career = () => {
                                     {status === "SUCCESS" ? "Application Received" : status === "SUBMITTING" ? "Submitting..." : "Submit Application"}
                                 </button>
 
-                                {status === "SUCCESS" && (
-                                    <div style={{ marginTop: '15px', padding: '15px', background: 'rgba(34, 197, 94, 0.1)', color: '#4ade80', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.3)', textAlign: 'center' }}>
-                                        <div style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '4px' }}>✓ Application Submitted Successfully!</div>
-                                        <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Our talent team will review your profile shortly.</div>
-                                    </div>
-                                )}
-                                {status === "ERROR" && (
-                                    <div style={{ marginTop: '15px', padding: '15px', background: 'rgba(239, 68, 68, 0.1)', color: '#fca5a5', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.3)', textAlign: 'center' }}>
-                                        <div style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '4px' }}>✕ Submission Failed</div>
-                                        <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Please check your connection and try again.</div>
-                                    </div>
-                                )}
                             </form>
                         </div>
                     )}

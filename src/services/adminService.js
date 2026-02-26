@@ -833,28 +833,8 @@ const AdminService = {
 
                     if (uploadError) {
                         console.error("Storage upload error (Bucket/Policy issue?):", uploadError);
-
-                        // SELF-HEALING FALLBACK: Convert to Data URI so resume is still accessible
-                        // Limit fallback to 1.5MB to prevent DB performance issues
-                        const MAX_FALLBACK_SIZE = 1.5 * 1024 * 1024; // 1.5MB
-
-                        if (resumeFile.size <= MAX_FALLBACK_SIZE) {
-                            try {
-                                const reader = new FileReader();
-                                const base64Promise = new Promise((resolve) => {
-                                    reader.onloadend = () => resolve(reader.result);
-                                    reader.readAsDataURL(resumeFile);
-                                });
-                                candidateData.resume_url = await base64Promise;
-                                console.log(`Self-healing: stored resume as Data URI (${(resumeFile.size / 1024).toFixed(1)}KB) due to upload failure.`);
-                            } catch (readErr) {
-                                console.error("Failed to read file for fallback:", readErr);
-                                candidateData.resume_url = resumeFile.name;
-                            }
-                        } else {
-                            console.warn(`File too large (${(resumeFile.size / (1024 * 1024)).toFixed(1)}MB) for Base64 fallback. Storage policy must be fixed.`);
-                            candidateData.resume_url = resumeFile.name;
-                        }
+                        // Fallback to just the filename if upload fails, but don't attempt slow base64 conversion
+                        candidateData.resume_url = resumeFile.name;
                     } else {
                         const { data: { publicUrl } } = supabase.storage
                             .from('resumes')

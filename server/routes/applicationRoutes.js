@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { upload, supabase } = require('../services/uploadService');
+const Application = require('../models/Application');
 
 // Get all applications
 router.get('/', async (req, res) => {
