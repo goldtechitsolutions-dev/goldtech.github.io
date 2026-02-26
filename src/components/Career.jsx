@@ -144,21 +144,6 @@ const Career = () => {
                         </p>
 
                         <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginBottom: '50px' }}>
-                            <a href="#open-roles" style={{ textDecoration: 'none' }}>
-                                <button style={{
-                                    padding: '12px 30px',
-                                    background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)',
-                                    color: '#000',
-                                    border: 'none',
-                                    borderRadius: '30px',
-                                    cursor: 'pointer',
-                                    fontWeight: 'bold',
-                                    fontSize: '1.1rem',
-                                    boxShadow: '0 4px 15px rgba(212, 175, 55, 0.3)'
-                                }}>
-                                    View Open Roles
-                                </button>
-                            </a>
                             <Link to="/create-profile" style={{ textDecoration: 'none' }}>
                                 <button style={{
                                     padding: '12px 30px',
@@ -216,7 +201,7 @@ const Career = () => {
 
                     {/* Job Search & Filter */}
                     {!showForm && (
-                        <div id="open-roles" style={{ marginBottom: '30px', width: '100%', maxWidth: '800px', background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px' }}>
+                        <div style={{ marginBottom: '30px', width: '100%', maxWidth: '800px', background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px' }}>
                             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '10px' }}>
                                 <input
                                     type="text"
