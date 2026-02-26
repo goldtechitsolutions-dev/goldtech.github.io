@@ -832,8 +832,8 @@ const AdminService = {
                         });
 
                     if (uploadError) {
-                        console.error("Supabase Storage Upload Error:", uploadError.message);
-                        candidateData.resume_url = resumeFile.name;
+                        console.error("Supabase Storage Upload Error:", uploadError);
+                        throw new Error(`Resume upload failed: ${uploadError.message}. Check your Supabase Storage policies.`);
                     } else {
                         const { data: { publicUrl } } = supabase.storage
                             .from('RESUMES')
