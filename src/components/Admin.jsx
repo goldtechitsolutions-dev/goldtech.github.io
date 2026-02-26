@@ -121,6 +121,18 @@ const Admin = () => {
     const [vaultSearch, setVaultSearch] = useState('');
     const [vaultCategory, setVaultCategory] = useState('All');
 
+    // Privileged Access Management Search State
+    const [searchTerm, setSearchTerm] = useState('');
+    const filteredUsers = useMemo(() => {
+        if (!searchTerm) return users;
+        return users.filter(u =>
+            (u.name && u.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (u.email && u.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (u.role && u.role.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (u.department && u.department.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+    }, [users, searchTerm]);
+
     // Global Search State
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
