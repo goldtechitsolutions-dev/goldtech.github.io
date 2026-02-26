@@ -4091,7 +4091,7 @@ const Admin = () => {
 
 
 
-                                {/* --- Access Management --- */}
+                {/* --- Access Management --- */}
                 {
                     activeTab === 'access-management' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
@@ -4153,6 +4153,107 @@ const Admin = () => {
                                                     </td>
                                                 </tr>
                                             ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Operator Access (Employee Privileged Access Management) */}
+                            <div style={cardStyle}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap', gap: '20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                        <div style={{
+                                            width: '45px', height: '45px', background: 'rgba(212, 175, 55, 0.1)',
+                                            borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            border: '1px solid rgba(212, 175, 55, 0.2)'
+                                        }}>
+                                            <ShieldAlert size={22} color="#D4AF37" />
+                                        </div>
+                                        <div>
+                                            <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#fff', margin: 0 }}>Privileged Access Management</h3>
+                                            <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: 0 }}>Manage core administrative accounts and active directories.</p>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <div style={{ position: 'relative' }}>
+                                            <Search size={16} color="#9ca3af" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                                            <input
+                                                type="text"
+                                                placeholder="Search identities..."
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                style={{ ...inputStyle, paddingLeft: '35px', width: '250px' }}
+                                            />
+                                        </div>
+                                        <button onClick={() => handleOpenUserModal()} style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)', color: '#000', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '800', fontSize: '0.9rem' }}>
+                                            <UserPlus size={16} /> Enlist Identity
+                                        </button>
+                                    </div>
+                                </div>
+                                <div style={{ overflowX: 'auto' }} className="custom-scrollbar">
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                        <thead>
+                                            <tr style={{ background: 'rgba(255, 255, 255, 0.02)', textAlign: 'left' }}>
+                                                <th style={thStyle}>Designation</th>
+                                                <th style={thStyle}>Identifier</th>
+                                                <th style={thStyle}>Clearance Level</th>
+                                                <th style={thStyle}>Department Unit</th>
+                                                <th style={thStyle}>System Status</th>
+                                                <th style={{ ...thStyle, textAlign: 'right' }}>Directives</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredUsers.map((user) => (
+                                                <tr key={user.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)', transition: 'background 0.2s', ':hover': { background: 'rgba(255,255,255,0.01)' } }}>
+                                                    <td style={{ ...tdStyle, fontWeight: '700', color: '#fff' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                            <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.8rem', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
+                                                                {user.name.charAt(0)}
+                                                            </div>
+                                                            <div>
+                                                                <div>{user.name}</div>
+                                                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 'normal' }}>ID: {user.id.substring(0, 8)}...</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ ...tdStyle, color: '#94a3b8', fontSize: '0.9rem' }}>{user.email}</td>
+                                                    <td style={tdStyle}>
+                                                        <span style={{
+                                                            padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800',
+                                                            background: user.role === 'Super_Admin' ? 'rgba(239, 68, 68, 0.1)' : user.role === 'Admin' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                                                            color: user.role === 'Super_Admin' ? '#ef4444' : user.role === 'Admin' ? '#3b82f6' : '#10b981',
+                                                            border: `1px solid ${user.role === 'Super_Admin' ? 'rgba(239,68,68,0.2)' : user.role === 'Admin' ? 'rgba(59,130,246,0.2)' : 'rgba(16,185,129,0.2)'}`
+                                                        }}>
+                                                            {user.role}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ ...tdStyle, color: '#cbd5e1', fontSize: '0.9rem' }}>{user.department || 'Central Command'}</td>
+                                                    <td style={tdStyle}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: user.status === 'Active' ? '#10b981' : '#f59e0b', boxShadow: `0 0 8px ${user.status === 'Active' ? '#10b981' : '#f59e0b'}` }}></div>
+                                                            <span style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>{user.status}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                                            <button onClick={() => handleOpenUserModal(user)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '6px', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }} title="Edit Profile">
+                                                                <Edit size={14} />
+                                                            </button>
+                                                            <button onClick={() => handleDeleteUser(user.id)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '6px', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }} title="Revoke Access">
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {filteredUsers.length === 0 && (
+                                                <tr>
+                                                    <td colSpan="6" style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>
+                                                        <ShieldAlert size={48} style={{ opacity: 0.2, marginBottom: '10px' }} /><br />
+                                                        No identities match current filters.
+                                                    </td>
+                                                </tr>
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>
