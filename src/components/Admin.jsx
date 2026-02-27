@@ -2087,7 +2087,7 @@ const Admin = ({ currentUser }) => {
                                                         <div style={{ color: '#cbd5e1', fontWeight: '600', wordBreak: 'break-all' }}>{metadata?.contact || q.email || 'N/A'}</div>
                                                     </div>
 
-                                                    <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+                                                    <div style={{ display: 'flex', gap: '8px', marginTop: '5px' }}>
                                                         <button
                                                             onClick={() => {
                                                                 setResetTarget({
@@ -2101,11 +2101,23 @@ const Admin = ({ currentUser }) => {
                                                                 setIsResetModalOpen(true);
                                                             }}
                                                             style={{
-                                                                flex: 2, padding: '10px', background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                                                                flex: 3, padding: '10px', background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
                                                                 border: 'none', borderRadius: '8px', color: '#000', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem'
                                                             }}
                                                         >
                                                             Reset Password
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedItem(q);
+                                                                setModalType('query');
+                                                            }}
+                                                            style={{
+                                                                flex: 2, padding: '10px', background: 'rgba(59, 130, 246, 0.1)',
+                                                                border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '8px', color: '#3b82f6', fontWeight: '700', cursor: 'pointer', fontSize: '0.8rem'
+                                                            }}
+                                                        >
+                                                            Details
                                                         </button>
                                                         <button
                                                             onClick={async () => {

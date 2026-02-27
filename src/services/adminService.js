@@ -2799,25 +2799,29 @@ const AdminService = {
             const timestamp = new Date().toISOString();
 
             // Update password and timestamp in specific table
-            const { error } = await supabase
+            const { data, error, count } = await supabase
                 .from(table)
                 .update({
                     password: newPassword,
                     password_updated_at: timestamp
                 })
-                .match(category === 'Employee' ? { employee_id: identifier } : { client_id: identifier });
+                .match(category === 'Employee' ? { employee_id: identifier } : { client_id: identifier })
+                .select();
 
-            if (error) {
+            if (error || !data || data.length === 0) {
                 // Try matching by ID if identifier search failed
-                const { error: idError } = await supabase
+                const { data: idData, error: idError } = await supabase
                     .from(table)
                     .update({
                         password: newPassword,
                         password_updated_at: timestamp
                     })
-                    .match({ id: identifier });
+                    .match({ id: identifier })
+                    .select();
 
-                if (idError) throw idError;
+                if (idError || !idData || idData.length === 0) {
+                    throw new Error(idError?.message || 'Account not found in target database.');
+                }
             }
 
             // Log activity
@@ -2826,7 +2830,7 @@ const AdminService = {
             return { success: true, message: 'Password has been reset successfully and expiry policy updated.' };
         } catch (error) {
             console.error('resetUserPassword error:', error);
-            return { success: false, message: 'Failed to reset password. Check console for details.' };
+            return { success: false, message: `Failed to reset password: ${error.message}` };
         }
     }
 };
