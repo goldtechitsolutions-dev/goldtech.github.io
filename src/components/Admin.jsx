@@ -1598,7 +1598,7 @@ const Admin = ({ currentUser }) => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {queries.map((q) => (
+                                    {queries.filter(q => !q.message?.includes('[SECURITY]')).map((q) => (
                                         <tr key={q.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
                                             <td style={tdStyle}>
                                                 <div style={{ fontWeight: '700', color: '#fff' }}>{q.name}</div>
