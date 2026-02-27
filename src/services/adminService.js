@@ -2705,7 +2705,10 @@ const AdminService = {
     // --- Password Security Methods ---
     requestPasswordReset: async (identifier, portalName) => {
         try {
-            // 1. Identify User/Client
+            // 1. Generate Unique Request ID
+            const requestId = `GT-RST-${Math.floor(1000 + Math.random() * 9000)}`;
+
+            // 2. Identify User/Client
             const users = await AdminService.getUsers();
             const clients = await AdminService.getClients();
             const target = users.find(u => u.email === identifier || u.name === identifier) ||
@@ -2714,22 +2717,22 @@ const AdminService = {
             const name = target ? (target.name || target.email) : identifier;
             const id = target ? target.id : 'Unknown';
 
-            // 2. Create Query (Visible in Admin)
+            // 3. Create Query (Visible in Admin)
             const { error: queryError } = await supabase
                 .from('queries')
                 .insert([{
                     name: name,
                     email: identifier,
-                    message: `[SECURITY] Password reset request for ${name} (${portalName} access). User ID: ${id}`,
+                    message: `[SECURITY] [REQ: ${requestId}] Password reset request for ${name} (${portalName} access). User ID: ${id}`,
                     status: 'New'
                 }]);
 
             if (queryError) throw queryError;
 
-            // 3. Log to History
-            await AdminService.logPasswordResetActivity(identifier, name, 'Reset Request Raised');
+            // 4. Log to History
+            await AdminService.logPasswordResetActivity(identifier, name, `Reset Request Raised (ID: ${requestId})`);
 
-            return { success: true, message: 'Password reset request submitted. An administrator will review your request shortly.' };
+            return { success: true, requestId, message: `Password reset request submitted successfully. Your Request ID is ${requestId}. Please quote this for follow-up.` };
         } catch (error) {
             console.error('requestPasswordReset error:', error);
             return { success: false, message: 'Failed to submit reset request. Please try again later.' };
