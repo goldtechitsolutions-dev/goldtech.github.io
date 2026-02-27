@@ -420,8 +420,11 @@ const Admin = () => {
         const generatedClientId = `CLI-${Math.floor(1000 + Math.random() * 9000)}`;
         setFormData(client ? { ...client, newPassword: '' } : {
             name: '',
-            contactPerson: '',
+            clientPhone: '',
             email: '',
+            pocName: '',
+            pocPhone: '',
+            pocEmail: '',
             projectId: '',
             projectName: '',
             projectDetails: '',
@@ -3026,7 +3029,7 @@ const Admin = () => {
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                                                     <div>
-                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Entity Name</label>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Client Name</label>
                                                         <input
                                                             type="text"
                                                             value={formData.name || ''}
@@ -3036,11 +3039,43 @@ const Admin = () => {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Primary Contact (POC)</label>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Client Phone No</label>
+                                                        <input
+                                                            type="tel"
+                                                            value={formData.clientPhone || ''}
+                                                            onChange={(e) => setFormData({ ...formData, clientPhone: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>POC Name</label>
                                                         <input
                                                             type="text"
-                                                            value={formData.contactPerson || ''}
-                                                            onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
+                                                            value={formData.pocName || ''}
+                                                            onChange={(e) => setFormData({ ...formData, pocName: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>POC Phone</label>
+                                                        <input
+                                                            type="tel"
+                                                            value={formData.pocPhone || ''}
+                                                            onChange={(e) => setFormData({ ...formData, pocPhone: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>POC Email</label>
+                                                        <input
+                                                            type="email"
+                                                            value={formData.pocEmail || ''}
+                                                            onChange={(e) => setFormData({ ...formData, pocEmail: e.target.value })}
                                                             style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff' }}
                                                             required
                                                         />
