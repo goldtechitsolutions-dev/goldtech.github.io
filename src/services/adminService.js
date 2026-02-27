@@ -1328,29 +1328,94 @@ const AdminService = {
 
     // --- Client Management ---
     getClients: async () => {
-        return AdminService._getData('gt_clients', initialClients);
+        try {
+            const { data, error } = await supabase
+                .from('clients')
+                .select('*')
+                .order('id', { ascending: false });
+
+            if (error) {
+                console.error('Supabase fetch clients error, falling back:', error);
+                return AdminService._getData('gt_clients', initialClients);
+            }
+            // Update local cache for offline sync/hot refresh
+            if (data && data.length > 0) {
+                AdminService._saveData('gt_clients', data);
+                return data;
+            }
+            return AdminService._getData('gt_clients', initialClients);
+        } catch (error) {
+            console.error('Network error fetching clients, falling back:', error);
+            return AdminService._getData('gt_clients', initialClients);
+        }
     },
 
     addClient: async (client) => {
-        const clients = await AdminService.getClients();
-        const newClient = { ...client, id: Date.now(), status: 'Active' };
-        const newClients = [...clients, newClient];
-        AdminService._saveData('gt_clients', newClients);
-        return newClients;
+        try {
+            const clientPayload = { ...client, status: 'Active' };
+            delete clientPayload.id; // Let Supabase gen_random_uuid handle ID creation
+
+            const { data, error } = await supabase
+                .from('clients')
+                .insert([clientPayload])
+                .select();
+
+            if (error) throw error;
+
+            // Re-fetch all to ensure synchronization
+            return await AdminService.getClients();
+        } catch (error) {
+            console.error('Supabase add client error, falling back:', error);
+            // Fallback
+            const clients = await AdminService.getClients();
+            const newClient = { ...client, id: Date.now().toString(), status: 'Active' };
+            const newClients = [...clients, newClient];
+            AdminService._saveData('gt_clients', newClients);
+            return newClients;
+        }
     },
 
     updateClient: async (updatedClient) => {
-        const clients = await AdminService.getClients();
-        const newClients = clients.map(c => c.id === updatedClient.id ? updatedClient : c);
-        AdminService._saveData('gt_clients', newClients);
-        return newClients;
+        try {
+            const { id, ...updatePayload } = updatedClient;
+
+            const { data, error } = await supabase
+                .from('clients')
+                .update(updatePayload)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+
+            return await AdminService.getClients();
+        } catch (error) {
+            console.error('Supabase update client error, falling back:', error);
+            // Fallback
+            const clients = await AdminService.getClients();
+            const newClients = clients.map(c => c.id === updatedClient.id ? updatedClient : c);
+            AdminService._saveData('gt_clients', newClients);
+            return newClients;
+        }
     },
 
     deleteClient: async (id) => {
-        const clients = await AdminService.getClients();
-        const newClients = clients.filter(c => c.id !== id);
-        AdminService._saveData('gt_clients', newClients);
-        return newClients;
+        try {
+            const { error } = await supabase
+                .from('clients')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            return await AdminService.getClients();
+        } catch (error) {
+            console.error('Supabase delete client error, falling back:', error);
+            // Fallback
+            const clients = await AdminService.getClients();
+            const newClients = clients.filter(c => c.id !== id);
+            AdminService._saveData('gt_clients', newClients);
+            return newClients;
+        }
     },
 
     // --- Role-Based Access Control (RBAC) ---
