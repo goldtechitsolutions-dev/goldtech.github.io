@@ -417,7 +417,16 @@ const Admin = () => {
     const handleOpenClientModal = (client = null) => {
         setSelectedItem(client);
         setModalType('upsert_client');
-        setFormData(client || { name: '', contactPerson: '', email: '', status: 'Active' });
+        const generatedClientId = `CLI-${Math.floor(1000 + Math.random() * 9000)}`;
+        setFormData(client ? { ...client, newPassword: '' } : {
+            name: '',
+            contactPerson: '',
+            email: '',
+            projectId: '',
+            clientId: generatedClientId,
+            password: '',
+            status: 'Active'
+        });
     };
 
     const closeModal = () => {
@@ -488,14 +497,17 @@ const Admin = () => {
             setIsSubmitting(false);
         }
     };
-
     const handleClientSubmit = async (e) => {
         e.preventDefault();
         setModalError('');
         setIsSubmitting(true);
         try {
             if (selectedItem && selectedItem.id) {
-                await AdminService.updateClient({ ...selectedItem, ...formData });
+                const updatePayload = { ...selectedItem, ...formData };
+                if (formData.newPassword) {
+                    updatePayload.password = formData.newPassword;
+                }
+                await AdminService.updateClient(updatePayload);
             } else {
                 await AdminService.addClient(formData);
             }
@@ -3007,26 +3019,112 @@ const Admin = () => {
                                                 {selectedItem ? 'Refine Client Record' : 'Initialize Client Record'}
                                             </h2>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Entity Name</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.name || ''}
+                                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Primary Contact</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.contactPerson || ''}
+                                                            onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Corporate Email</label>
+                                                        <input
+                                                            type="email"
+                                                            value={formData.email || ''}
+                                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Project ID</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.projectId || ''}
+                                                            onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            placeholder="e.g. PRJ-1011"
+                                                        />
+                                                    </div>
+                                                </div>
+
                                                 <div>
-                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Entity Name</label>
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Client ID (System Generated)</label>
                                                     <input
                                                         type="text"
-                                                        value={formData.name || ''}
-                                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff' }}
-                                                        required
+                                                        value={formData.clientId || ''}
+                                                        readOnly
+                                                        style={{ width: '100%', padding: '12px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#94a3b8', cursor: 'not-allowed' }}
                                                     />
                                                 </div>
-                                                <div>
-                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Primary Contact</label>
-                                                    <input
-                                                        type="text"
-                                                        value={formData.contactPerson || ''}
-                                                        onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
-                                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff' }}
-                                                        required
-                                                    />
-                                                </div>
+
+                                                {!selectedItem && (
+                                                    <div>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                            <label style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Client Portal Password</label>
+                                                            <button
+                                                                type="button"
+                                                                onClick={async () => {
+                                                                    const strongPass = await AdminService.generateSecurePassword();
+                                                                    setFormData({ ...formData, password: strongPass });
+                                                                }}
+                                                                style={{ background: 'none', border: 'none', color: '#D4AF37', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                                                            >
+                                                                <RefreshCw size={12} /> Suggest Secure Password
+                                                            </button>
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.password || ''}
+                                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                                            placeholder="Secure password required for portal login"
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            required={!selectedItem}
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {selectedItem && (
+                                                    <div style={{ marginTop: '5px' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                            <label style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Reset Client Password (Optional)</label>
+                                                            <button
+                                                                type="button"
+                                                                onClick={async () => {
+                                                                    const strongPass = await AdminService.generateSecurePassword();
+                                                                    setFormData({ ...formData, newPassword: strongPass });
+                                                                }}
+                                                                style={{ background: 'none', border: 'none', color: '#D4AF37', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                                                            >
+                                                                <RefreshCw size={12} /> Suggest Secure Password
+                                                            </button>
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.newPassword || ''}
+                                                            onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                                                            placeholder="Leave blank to keep current password"
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        />
+                                                    </div>
+                                                )}
                                                 {modalError && (
                                                     <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '10px', color: '#ef4444', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                         <AlertCircle size={16} /> {modalError}
