@@ -829,11 +829,14 @@ const Admin = ({ currentUser }) => {
                     </button>
 
                     <div style={{ padding: '20px 15px 10px', fontSize: '0.7rem', fontWeight: '700', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '2px' }}>Lead Management</div>
-                    <button onClick={() => setActiveTab('meetings')} style={navLinkStyle(activeTab === 'meetings')}>
-                        <Calendar size={18} /> Scheduled Meeting
+                    <button onClick={() => setActiveTab('queries')} style={navLinkStyle(activeTab === 'queries')}>
+                        <Mail size={18} /> Central Inbox
                     </button>
                     <button onClick={() => setActiveTab('leads')} style={navLinkStyle(activeTab === 'leads')}>
-                        <Mail size={18} /> Lead Funnel
+                        <BarChart2 size={18} /> Sales Intelligence
+                    </button>
+                    <button onClick={() => setActiveTab('meetings')} style={navLinkStyle(activeTab === 'meetings')}>
+                        <Calendar size={18} /> Scheduled Meeting
                     </button>
                     <button onClick={() => setActiveTab('chatbot')} style={navLinkStyle(activeTab === 'chatbot')}>
                         <Zap size={18} /> AI Chat Analysis
