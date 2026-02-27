@@ -17,27 +17,27 @@ import fallbackImage from '../assets/modern-office.png';
 const videoSlides = [
     {
         id: 0,
-        videoSrc: p2Video,
-        title: "Expertise That Matters",
-        subtitle: "From Cloud Architecture to AI-driven insights, our team delivers excellence. GoldTech leads the way in intelligent automation and data-driven innovation.",
-        cta: "View Expertise",
-        duration: 10000
-    },
-    {
-        id: 1,
         videoSrc: aiVideo,
         poster: heroPoster,
         title: "AI and GOLDTECH",
-        subtitle: "Harnessing the power of Artificial Intelligence to redefine possibilities.",
+        subtitle: "Harnessing the power of Artificial Intelligence to redefine possibilities. GoldTech leads the way in intelligent automation and data-driven innovation.",
         cta: "Discover AI Solutions",
         duration: 9000
     },
     {
-        id: 2,
+        id: 1,
         videoSrc: smartCityVideo,
         title: "Next-Gen Cloud Solutions",
         subtitle: "Transform your business with scalable, secure, and high-performance cloud infrastructure designed for the future.",
         cta: "Explore Cloud Tech",
+        duration: 10000
+    },
+    {
+        id: 2,
+        videoSrc: p2Video,
+        title: "Expertise That Matters",
+        subtitle: "From Cloud Architecture to AI-driven insights, our team delivers excellence.",
+        cta: "View Expertise",
         duration: 10000
     },
     {

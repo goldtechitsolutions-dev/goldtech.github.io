@@ -33,6 +33,9 @@ const PortalAuth = ({ children, portalName }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
+    const [expiryWarning, setExpiryWarning] = useState('');
+    const [forgotMode, setForgotMode] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
     const [loginLoading, setLoginLoading] = useState(false);
 
     // Versioned keys to force re-authentication after security updates
