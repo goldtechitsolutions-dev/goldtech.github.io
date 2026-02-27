@@ -211,7 +211,7 @@ const Admin = () => {
             const [
                 apps, qs, meets, usrs, rls, jbs,
                 health, services, logs, infra, cLogs, keys, jit, audits, creds, sec,
-                metrics, proj, fin, info
+                metrics, proj, fin, info, fetchedClients
             ] = await Promise.all([
                 AdminService.getApplications(),
                 AdminService.getQueries(),
@@ -232,7 +232,8 @@ const Admin = () => {
                 AdminService.getIndustryMetrics ? AdminService.getIndustryMetrics() : Promise.resolve({}),
                 AdminService.getProjectHealth(),
                 AdminService.getFinancialStats(),
-                AdminService.getCompanyInfo()
+                AdminService.getCompanyInfo(),
+                AdminService.getClients()
             ]);
 
             setApplications(apps || []);
@@ -256,6 +257,7 @@ const Admin = () => {
             setProjectHealth(proj || []);
             setFinancialMetrics(fin);
             setCompanyInfo(info);
+            setClients(fetchedClients || []);
 
             setStats([
                 { title: 'Total Visits', value: '12,450', change: '+12%', icon: <Users size={24} color="#004687" /> },
