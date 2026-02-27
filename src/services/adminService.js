@@ -1351,71 +1351,57 @@ const AdminService = {
     },
 
     addClient: async (client) => {
-        try {
-            const clientPayload = { ...client, status: 'Active' };
-            delete clientPayload.id; // Let Supabase gen_random_uuid handle ID creation
-
-            const { data, error } = await supabase
-                .from('clients')
-                .insert([clientPayload])
-                .select();
-
-            if (error) throw error;
-
-            // Re-fetch all to ensure synchronization
-            return await AdminService.getClients();
-        } catch (error) {
-            console.error('Supabase add client error, falling back:', error);
-            // Fallback
-            const clients = await AdminService.getClients();
-            const newClient = { ...client, id: Date.now().toString(), status: 'Active' };
-            const newClients = [...clients, newClient];
-            AdminService._saveData('gt_clients', newClients);
-            return newClients;
+        const clientPayload = { ...client, status: 'Active' };
+        if (!clientPayload.id) {
+            delete clientPayload.id; // Let Supabase handle ID
+        } else {
+            // Keep if we want to retain string ID? Currently Supabase is strict UUID.
+            delete clientPayload.id;
         }
+
+        const { data, error } = await supabase
+            .from('clients')
+            .insert([clientPayload])
+            .select();
+
+        if (error) {
+            console.error('Supabase add client error:', error.message);
+            throw new Error(`Supabase Error: ${error.message} - Please ensure your schema exactly matches.`);
+        }
+
+        // Re-fetch all to ensure synchronization
+        return await AdminService.getClients();
     },
 
     updateClient: async (updatedClient) => {
-        try {
-            const { id, ...updatePayload } = updatedClient;
+        const { id, ...updatePayload } = updatedClient;
 
-            const { data, error } = await supabase
-                .from('clients')
-                .update(updatePayload)
-                .eq('id', id)
-                .select();
+        const { data, error } = await supabase
+            .from('clients')
+            .update(updatePayload)
+            .eq('id', id)
+            .select();
 
-            if (error) throw error;
-
-            return await AdminService.getClients();
-        } catch (error) {
-            console.error('Supabase update client error, falling back:', error);
-            // Fallback
-            const clients = await AdminService.getClients();
-            const newClients = clients.map(c => c.id === updatedClient.id ? updatedClient : c);
-            AdminService._saveData('gt_clients', newClients);
-            return newClients;
+        if (error) {
+            console.error('Supabase update client error:', error.message);
+            throw new Error(`Supabase Update Error: ${error.message}`);
         }
+
+        return await AdminService.getClients();
     },
 
     deleteClient: async (id) => {
-        try {
-            const { error } = await supabase
-                .from('clients')
-                .delete()
-                .eq('id', id);
+        const { error } = await supabase
+            .from('clients')
+            .delete()
+            .eq('id', id);
 
-            if (error) throw error;
-
-            return await AdminService.getClients();
-        } catch (error) {
-            console.error('Supabase delete client error, falling back:', error);
-            // Fallback
-            const clients = await AdminService.getClients();
-            const newClients = clients.filter(c => c.id !== id);
-            AdminService._saveData('gt_clients', newClients);
-            return newClients;
+        if (error) {
+            console.error('Supabase delete client error:', error.message);
+            throw new Error(`Supabase Delete Error: ${error.message}`);
         }
+
+        return await AdminService.getClients();
     },
 
     // --- Role-Based Access Control (RBAC) ---
