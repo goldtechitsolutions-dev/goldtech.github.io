@@ -1,4 +1,4 @@
-﻿
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -398,7 +398,8 @@ const Admin = () => {
     const handleOpenUserModal = (user = null) => {
         setSelectedItem(user);
         setModalType('upsert_user');
-        setFormData(user || {
+        const generatedEmpId = `EMP-${Math.floor(1000 + Math.random() * 9000)}`;
+        setFormData(user ? { ...user, newPassword: '' } : {
             name: '',
             email: '',
             role: 'Employee',
@@ -406,7 +407,8 @@ const Admin = () => {
             designation: '',
             dob: '',
             mobile: '',
-            employeeId: '',
+            employeeId: generatedEmpId,
+            password: '',
             access: [],
             status: 'Active'
         });
@@ -468,7 +470,11 @@ const Admin = () => {
         console.log('Initiating User Save:', formData.email);
         try {
             if (selectedItem && selectedItem.id) {
-                await AdminService.updateUser({ ...selectedItem, ...formData });
+                const updatePayload = { ...selectedItem, ...formData };
+                if (formData.newPassword) {
+                    updatePayload.password = formData.newPassword;
+                }
+                await AdminService.updateUser(updatePayload);
             } else {
                 await AdminService.addUser(formData);
             }
@@ -1327,7 +1333,7 @@ const Admin = () => {
                                                     <p style={{ fontSize: '0.9rem', fontWeight: '500', color: '#fff' }}>
                                                         <span style={{ fontWeight: '800', color: '#D4AF37' }}>{item.name}</span> {item.action}
                                                     </p>
-                                                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                                                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                         <Clock size={12} /> {item.date}
                                                     </p>
                                                 </div>
@@ -1895,7 +1901,7 @@ const Admin = () => {
                                             <td style={tdStyle}><span style={{ color: '#cbd5e1' }}>4 Operational Projects</span></td>
                                             <td style={tdStyle}><span style={statusBadge(c.status)}>{c.status}</span></td>
                                             <td style={{ ...tdStyle, textAlign: 'right' }}>
-                                                <button onClick={() => handleOpenClientModal(c)} style={{ color: '#D4AF37', background: 'rgba(212, 175, 55, 0.1)', border: 'none', cursor: 'pointer', padding: '8px 16px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800' }}>MANAGE</button>
+                                                <button onClick={() => handleOpenClientModal(c)} style={{ color: '#D4AF37', background: 'rgba(212, 175, 55, 0.1)', border: 'none', cursor: 'pointer', fontWeight: '800', padding: '8px 16px', borderRadius: '8px', fontSize: '0.75rem', textTransform: 'uppercase' }}>MANAGE</button>
                                             </td>
                                         </tr>
                                     ))}
@@ -3183,14 +3189,12 @@ const Admin = () => {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Employee ID</label>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Employee ID (System Generated)</label>
                                                         <input
                                                             type="text"
                                                             value={formData.employeeId || ''}
-                                                            onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
-                                                            placeholder="e.g. EMP-1011"
-                                                            required
+                                                            readOnly
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#94a3b8', cursor: 'not-allowed' }}
                                                         />
                                                     </div>
                                                 </div>
@@ -3294,6 +3298,56 @@ const Admin = () => {
                                                             placeholder="Strong password required"
                                                             style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
                                                             required={!selectedItem}
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {selectedItem && (
+                                                    <div style={{ marginTop: '10px' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                            <label style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Reset Password (Optional)</label>
+                                                            <button
+                                                                type="button"
+                                                                onClick={async () => {
+                                                                    const strongPass = await AdminService.generateSecurePassword();
+                                                                    setFormData({ ...formData, newPassword: strongPass });
+                                                                }}
+                                                                style={{ background: 'none', border: 'none', color: '#D4AF37', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                                                            >
+                                                                <RefreshCw size={12} /> Suggest Strong Key
+                                                            </button>
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.newPassword || ''}
+                                                            onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                                                            placeholder="Leave blank to keep current password"
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {selectedItem && (
+                                                    <div style={{ marginTop: '10px' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                            <label style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Reset Password (Optional)</label>
+                                                            <button
+                                                                type="button"
+                                                                onClick={async () => {
+                                                                    const strongPass = await AdminService.generateSecurePassword();
+                                                                    setFormData({ ...formData, newPassword: strongPass });
+                                                                }}
+                                                                style={{ background: 'none', border: 'none', color: '#D4AF37', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                                                            >
+                                                                <RefreshCw size={12} /> Suggest Strong Key
+                                                            </button>
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.newPassword || ''}
+                                                            onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                                                            placeholder="Leave blank to keep current password"
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
                                                         />
                                                     </div>
                                                 )}
