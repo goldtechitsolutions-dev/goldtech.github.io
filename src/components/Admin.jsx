@@ -525,7 +525,8 @@ const Admin = () => {
             await refreshData();
             closeModal();
         } catch (err) {
-            setModalError('Failed to save client. Please check and try again.');
+            setModalError(err.message || 'Failed to save client. Please check your network or try again.');
+            console.error('Client Submit Error:', err);
             console.error('Client Submit Error:', err);
         } finally {
             setIsSubmitting(false);
