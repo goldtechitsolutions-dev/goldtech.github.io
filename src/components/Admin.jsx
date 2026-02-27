@@ -60,10 +60,8 @@ const Admin = ({ currentUser }) => {
     const [candidates, setCandidates] = useState([]);
     const [jobs, setJobs] = useState([]);
     const [companyInfo, setCompanyInfo] = useState({ address: '', email: '', phone: '', footerOpacity: 0.5 });
-    const [resetHistory, setResetHistory] = useState([]);
 
     // Selection & UI State
-    const [modalType, setModalType] = useState(null); // application, query, meeting, etc.
     const [isResetModalOpen, setIsResetModalOpen] = useState(false);
     const [resetTarget, setResetTarget] = useState(null); // { category, identifier, name, contact }
 
