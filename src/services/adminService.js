@@ -2713,26 +2713,32 @@ const AdminService = {
             // 2. Identify User/Client
             const users = await AdminService.getUsers();
             const clients = await AdminService.getClients();
-            const target = users.find(u => u.email === identifier || u.name === identifier) ||
-                clients.find(c => c.email === identifier || c.name === identifier);
+
+            const userMatch = users.find(u => u.email === identifier || u.name === identifier || u.employee_id === identifier);
+            const clientMatch = clients.find(c => c.email === identifier || c.name === identifier || c.client_id === identifier);
+
+            const target = userMatch || clientMatch;
+            const category = userMatch ? 'Employee' : (clientMatch ? 'Client' : 'Unknown');
 
             const name = target ? (target.name || target.email) : identifier;
-            const id = target ? target.id : 'Unknown';
+            const id = target ? (target.id || target.employee_id || target.client_id) : 'Unknown';
+            const contact = target ? (target.email || target.phone || identifier) : identifier;
 
             // 3. Create Query (Visible in Admin)
+            // Format: [SECURITY] [CAT: Category] [ID: ObjectID] [REQ: RequestID] Message
             const { error: queryError } = await supabase
                 .from('queries')
                 .insert([{
                     name: name,
                     email: identifier,
-                    message: `[SECURITY] [REQ: ${requestId}] Password reset request for ${name} (${portalName} access). User ID: ${id}`,
+                    message: `[SECURITY] [CAT: ${category}] [ID: ${id}] [REQ: ${requestId}] Password reset request for ${name} (${portalName} access). Contact: ${contact}`,
                     status: 'New'
                 }]);
 
             if (queryError) throw queryError;
 
             // 4. Log to History
-            await AdminService.logPasswordResetActivity(identifier, name, `Reset Request Raised (ID: ${requestId})`);
+            await AdminService.logPasswordResetActivity(identifier, name, `Reset Request Raised (ID: ${requestId} | Cat: ${category})`);
 
             return { success: true, requestId, message: `Password reset request submitted successfully. Your Request ID is ${requestId}. Please quote this for follow-up.` };
         } catch (error) {
@@ -2770,6 +2776,57 @@ const AdminService = {
         } catch (error) {
             console.error('getPasswordResetHistory error:', error);
             return [];
+        }
+    },
+
+    handleQueryStatusUpdate: async (queryId, newStatus) => {
+        try {
+            const { error } = await supabase
+                .from('queries')
+                .update({ status: newStatus })
+                .eq('id', queryId);
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('handleQueryStatusUpdate error:', error);
+            return { success: false, message: error.message };
+        }
+    },
+
+    resetUserPassword: async (category, identifier, newPassword) => {
+        try {
+            const table = category === 'Employee' ? 'Users' : 'clients';
+            const timestamp = new Date().toISOString();
+
+            // Update password and timestamp in specific table
+            const { error } = await supabase
+                .from(table)
+                .update({
+                    password: newPassword,
+                    password_updated_at: timestamp
+                })
+                .match(category === 'Employee' ? { employee_id: identifier } : { client_id: identifier });
+
+            if (error) {
+                // Try matching by ID if identifier search failed
+                const { error: idError } = await supabase
+                    .from(table)
+                    .update({
+                        password: newPassword,
+                        password_updated_at: timestamp
+                    })
+                    .match({ id: identifier });
+
+                if (idError) throw idError;
+            }
+
+            // Log activity
+            await AdminService.logPasswordResetActivity(identifier, category, `Administrative Password Reset Executed`);
+
+            return { success: true, message: 'Password has been reset successfully and expiry policy updated.' };
+        } catch (error) {
+            console.error('resetUserPassword error:', error);
+            return { success: false, message: 'Failed to reset password. Check console for details.' };
         }
     }
 };

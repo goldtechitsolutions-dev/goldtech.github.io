@@ -60,6 +60,33 @@ const Admin = ({ currentUser }) => {
     const [candidates, setCandidates] = useState([]);
     const [jobs, setJobs] = useState([]);
     const [companyInfo, setCompanyInfo] = useState({ address: '', email: '', phone: '', footerOpacity: 0.5 });
+    const [resetHistory, setResetHistory] = useState([]);
+
+    // Selection & UI State
+    const [modalType, setModalType] = useState(null); // application, query, meeting, etc.
+    const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+    const [resetTarget, setResetTarget] = useState(null); // { category, identifier, name, contact }
+
+    // Helper: Parse Security Ticket
+    const parseSecurityTicket = (message) => {
+        if (!message || !message.includes('[SECURITY]')) return null;
+
+        try {
+            const catMatch = message.match(/\[CAT:\s*([^\]]+)\]/);
+            const idMatch = message.match(/\[ID:\s*([^\]]+)\]/);
+            const reqMatch = message.match(/\[REQ:\s*([^\]]+)\]/);
+            const contactMatch = message.match(/Contact:\s*(.*)/);
+
+            return {
+                category: catMatch ? catMatch[1] : 'Unknown',
+                identifier: idMatch ? idMatch[1] : 'Unknown',
+                requestId: reqMatch ? reqMatch[1] : 'Unknown',
+                contact: contactMatch ? contactMatch[1] : 'Unknown'
+            };
+        } catch (e) {
+            return null;
+        }
+    };
 
     // Recruitment Filter & Sort State
     const [recruitmentFilters, setRecruitmentFilters] = useState({
@@ -2028,6 +2055,87 @@ const Admin = ({ currentUser }) => {
                                 </div>
                             </div>
 
+                            <div style={cardStyle}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                                    <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800' }}>Security Ticket Queue</h3>
+                                    <div style={{ padding: '6px 14px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', fontSize: '0.75rem', fontWeight: '800' }}>
+                                        {queries.filter(q => q.message?.includes('[SECURITY]') && q.status === 'New').length} PENDING
+                                    </div>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                                    {queries.filter(q => q.message?.includes('[SECURITY]') && q.status === 'New').length > 0 ? (
+                                        queries.filter(q => q.message?.includes('[SECURITY]') && q.status === 'New').map((q) => {
+                                            const metadata = parseSecurityTicket(q.message);
+                                            return (
+                                                <div key={q.id} style={{
+                                                    padding: '20px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.05)',
+                                                    display: 'flex', flexDirection: 'column', gap: '15px', position: 'relative', overflow: 'hidden'
+                                                }}>
+                                                    <div style={{ position: 'absolute', top: 0, right: 0, width: '4px', height: '100%', background: '#D4AF37' }}></div>
+
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                        <div>
+                                                            <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#D4AF37', marginBottom: '4px' }}>{metadata?.requestId || 'TICKET-ID'}</div>
+                                                            <h4 style={{ color: '#fff', margin: 0, fontSize: '1rem' }}>{q.name}</h4>
+                                                            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{metadata?.category || 'User'} Account</span>
+                                                        </div>
+                                                        <div style={{ background: 'rgba(212, 175, 55, 0.1)', padding: '6px', borderRadius: '8px', color: '#D4AF37' }}>
+                                                            <Lock size={18} />
+                                                        </div>
+                                                    </div>
+
+                                                    <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '10px', fontSize: '0.85rem' }}>
+                                                        <div style={{ color: '#64748b', marginBottom: '4px' }}>Contact Details:</div>
+                                                        <div style={{ color: '#cbd5e1', fontWeight: '600', wordBreak: 'break-all' }}>{metadata?.contact || q.email || 'N/A'}</div>
+                                                    </div>
+
+                                                    <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+                                                        <button
+                                                            onClick={() => {
+                                                                setResetTarget({
+                                                                    category: metadata?.category || 'Employee',
+                                                                    identifier: metadata?.identifier || q.email,
+                                                                    name: q.name,
+                                                                    requestId: metadata?.requestId || 'N/A',
+                                                                    ticketId: q.id,
+                                                                    contact: metadata?.contact || q.email
+                                                                });
+                                                                setIsResetModalOpen(true);
+                                                            }}
+                                                            style={{
+                                                                flex: 2, padding: '10px', background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                                                                border: 'none', borderRadius: '8px', color: '#000', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem'
+                                                            }}
+                                                        >
+                                                            Reset Password
+                                                        </button>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (confirm('Discard this security ticket?')) {
+                                                                    await AdminService.handleQueryStatusUpdate(q.id, 'Discarded');
+                                                                    refreshData();
+                                                                }
+                                                            }}
+                                                            style={{
+                                                                flex: 1, padding: '10px', background: 'rgba(239, 68, 68, 0.1)',
+                                                                border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', color: '#ef4444', fontWeight: '700', cursor: 'pointer', fontSize: '0.8rem'
+                                                            }}
+                                                        >
+                                                            Dismiss
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div style={{ gridColumn: 'span 3', padding: '40px', textAlign: 'center', color: '#64748b', background: 'rgba(255, 255, 255, 0.01)', borderRadius: '16px', border: '1px dashed rgba(255, 255, 255, 0.1)' }}>
+                                            <Shield size={32} style={{ opacity: 0.2, marginBottom: '15px' }} />
+                                            <p>No pending password reset requests.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
                             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '25px' }}>
                                 {/* Critical Security Alerts */}
                                 <div style={cardStyle}>
@@ -3735,6 +3843,100 @@ const Admin = ({ currentUser }) => {
                                                 <Activity className="animate-pulse" size={48} color="rgba(212, 175, 55, 0.3)" />
                                                 <div style={{ fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase' }}>[ Establishing Secure Data Link... ]</div>
                                             </div>
+                                        </div>
+                                    )}
+
+                                    {/* Manual Password Reset Modal */}
+                                    {isResetModalOpen && resetTarget && (
+                                        <div style={{ padding: '30px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '25px' }}>
+                                                <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', color: '#ef4444' }}>
+                                                    <ShieldAlert size={24} />
+                                                </div>
+                                                <div>
+                                                    <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800', margin: 0 }}>Administrative Reset</h3>
+                                                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0 }}>Resetting {resetTarget.category} password for {resetTarget.name}</p>
+                                                </div>
+                                            </div>
+
+                                            <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)', marginBottom: '25px' }}>
+                                                <p style={{ color: '#94a3b8', fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: '700', marginBottom: '10px' }}>Account Details</p>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                                    <div>
+                                                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Identifier</span>
+                                                        <p style={{ color: '#fff', fontWeight: '600', fontSize: '0.9rem' }}>{resetTarget.identifier}</p>
+                                                    </div>
+                                                    <div>
+                                                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Request ID</span>
+                                                        <p style={{ color: '#D4AF37', fontWeight: '800', fontSize: '0.9rem' }}>{resetTarget.requestId}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <form onSubmit={async (e) => {
+                                                e.preventDefault();
+                                                const newPass = e.target.newPassword.value;
+
+                                                // Complexity Validation: 9+ chars, Letters, Numbers, Symbols
+                                                const complexityRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+])[A-Za-z\d!@#$%^&*()_+]{9,}$/;
+                                                if (!complexityRegex.test(newPass)) {
+                                                    alert('Password must be at least 9 characters long and contain letters, numbers, and symbols.');
+                                                    return;
+                                                }
+
+                                                setModalType('loading');
+                                                const result = await AdminService.resetUserPassword(resetTarget.category, resetTarget.identifier, newPass);
+
+                                                if (result.success) {
+                                                    // Mark ticket as completed if it exists
+                                                    if (resetTarget.ticketId) {
+                                                        await AdminService.handleQueryStatusUpdate(resetTarget.ticketId, 'Completed');
+                                                    }
+                                                    alert(result.message);
+                                                    setIsResetModalOpen(false);
+                                                    setResetTarget(null);
+                                                    setModalType(null);
+                                                    refreshData();
+                                                } else {
+                                                    alert(result.message);
+                                                    setModalType(null);
+                                                }
+                                            }}>
+                                                <div style={{ marginBottom: '20px' }}>
+                                                    <label style={{ display: 'block', marginBottom: '10px', fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8' }}>NEW TEMPORARY PASSWORD</label>
+                                                    <div style={{ position: 'relative' }}>
+                                                        <Lock size={18} style={{ position: 'absolute', left: '15px', top: '15px', color: '#64748b' }} />
+                                                        <input
+                                                            name="newPassword"
+                                                            type="text"
+                                                            required
+                                                            placeholder="Set Secure Password..."
+                                                            style={{
+                                                                width: '100%', padding: '15px 15px 15px 45px', borderRadius: '12px',
+                                                                background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)',
+                                                                color: '#fff', fontSize: '1rem', outline: 'none'
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <p style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '10px' }}>Admin manual reset overrides the 45-day policy clock.</p>
+                                                </div>
+
+                                                <div style={{ display: 'flex', gap: '15px' }}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setIsResetModalOpen(false); setResetTarget(null); setModalType(null); }}
+                                                        style={{ flex: 1, padding: '15px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontWeight: '700', cursor: 'pointer' }}
+                                                    >
+                                                        Cancel Reset
+                                                    </button>
+                                                    <button
+                                                        type="submit"
+                                                        style={{ flex: 1, padding: '15px', borderRadius: '12px', background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)', border: 'none', color: '#000', fontWeight: '800', cursor: 'pointer' }}
+                                                    >
+                                                        Finalize Reset
+                                                    </button>
+                                                </div>
+                                            </form>
                                         </div>
                                     )}
                                 </div>
