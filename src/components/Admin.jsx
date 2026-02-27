@@ -900,7 +900,7 @@ const Admin = ({ currentUser }) => {
             </div>
 
             {/* Main Content */}
-            <div style={{ flex: 1, padding: '20px', overflowY: 'auto', position: 'relative', background: 'transparent' }}>
+            <div style={{ flex: 1, padding: '20px', overflowY: 'auto', position: 'relative', background: 'transparent', scrollbarGutter: 'stable' }}>
                 <header style={{
                     marginBottom: '40px',
                     display: 'flex',
@@ -4286,6 +4286,7 @@ const Admin = ({ currentUser }) => {
                                             initial={{ height: 0, opacity: 0 }}
                                             animate={{ height: 'auto', opacity: 1 }}
                                             exit={{ height: 0, opacity: 0 }}
+                                            transition={{ duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] }}
                                             style={{ overflow: 'hidden' }}
                                         >
                                             <div style={{ overflowX: 'auto', marginTop: '20px' }} className="custom-scrollbar">
@@ -4403,6 +4404,7 @@ const Admin = ({ currentUser }) => {
                                                 initial={{ height: 0, opacity: 0 }}
                                                 animate={{ height: 'auto', opacity: 1 }}
                                                 exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] }}
                                                 style={{ overflow: 'hidden' }}
                                             >
                                                 <div style={{ overflowX: 'auto', paddingBottom: '10px', marginTop: '20px' }} className="custom-scrollbar">
