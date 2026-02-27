@@ -183,6 +183,8 @@ const Admin = ({ currentUser }) => {
         };
 
         const handleStorageChange = (e) => {
+            if (isRefreshing) return; // Prevent loop if already refreshing
+
             let key = e.key;
             // Handle custom event for same-tab updates
             if (e.type === 'gt_data_update' && e.detail) {

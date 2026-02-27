@@ -557,11 +557,13 @@ const AdminService = {
         }
     },
 
-    _saveData: (key, data) => {
+    _saveData: (key, data, options = { silent: false }) => {
         try {
             localStorage.setItem(key, JSON.stringify(data));
-            // Dispatch custom event for same-tab updates
-            window.dispatchEvent(new CustomEvent('gt_data_update', { detail: { key, data } }));
+            // Dispatch custom event for same-tab updates unless silent is requested
+            if (!options.silent) {
+                window.dispatchEvent(new CustomEvent('gt_data_update', { detail: { key, data } }));
+            }
         } catch (e) {
             console.error("LocalStorage error:", e);
             if (e.name === 'QuotaExceededError') {
@@ -663,7 +665,7 @@ const AdminService = {
             }));
 
             // Update cache silently for next "immediate" load
-            AdminService._saveData('gt_jobs', mappedJobs);
+            AdminService._saveData('gt_jobs', mappedJobs, { silent: true });
 
             return mappedJobs;
 
@@ -1378,9 +1380,9 @@ const AdminService = {
                 console.error('Supabase fetch clients error, falling back:', error);
                 return AdminService._getData('gt_clients', initialClients);
             }
-            // Update local cache for offline sync/hot refresh
+            // Update local cache for offline sync/hot refresh (silently to avoid loops)
             if (data && data.length > 0) {
-                AdminService._saveData('gt_clients', data);
+                AdminService._saveData('gt_clients', data, { silent: true });
                 return data;
             }
             return AdminService._getData('gt_clients', initialClients);
