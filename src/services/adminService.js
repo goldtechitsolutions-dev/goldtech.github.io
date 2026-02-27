@@ -2704,52 +2704,68 @@ const AdminService = {
 
     // --- Password Security Methods ---
     requestPasswordReset: async (identifier, portalName) => {
-        // 1. Identify User/Client
-        const users = await AdminService.getUsers();
-        const clients = await AdminService.getClients();
-        const target = users.find(u => u.email === identifier || u.name === identifier) ||
-            clients.find(c => c.email === identifier || c.name === identifier);
+        try {
+            // 1. Identify User/Client
+            const users = await AdminService.getUsers();
+            const clients = await AdminService.getClients();
+            const target = users.find(u => u.email === identifier || u.name === identifier) ||
+                clients.find(c => c.email === identifier || c.name === identifier);
 
-        const name = target ? (target.name || target.email) : identifier;
-        const id = target ? target.id : 'Unknown';
+            const name = target ? (target.name || target.email) : identifier;
+            const id = target ? target.id : 'Unknown';
 
-        // 2. Create Query (Visible in Admin)
-        const query = {
-            id: Date.now(),
-            name: name,
-            email: identifier,
-            subject: 'Password Reset Request',
-            message: `A password reset request was initiated for ${name} (${portalName} access). User ID: ${id}`,
-            date: new Date().toISOString(),
-            status: 'New',
-            type: 'Security'
-        };
+            // 2. Create Query (Visible in Admin)
+            const { error: queryError } = await supabase
+                .from('queries')
+                .insert([{
+                    name: name,
+                    email: identifier,
+                    message: `[SECURITY] Password reset request for ${name} (${portalName} access). User ID: ${id}`,
+                    status: 'New'
+                }]);
 
-        const queries = await AdminService._getData('gt_queries', []);
-        queries.push(query);
-        AdminService._saveData('gt_queries', queries);
+            if (queryError) throw queryError;
 
-        // 3. Log to History
-        await AdminService.logPasswordResetActivity(id, name, 'Reset Request Raised');
+            // 3. Log to History
+            await AdminService.logPasswordResetActivity(identifier, name, 'Reset Request Raised');
 
-        return { success: true, message: 'Password reset request submitted. An administrator will review your request shortly.' };
+            return { success: true, message: 'Password reset request submitted. An administrator will review your request shortly.' };
+        } catch (error) {
+            console.error('requestPasswordReset error:', error);
+            return { success: false, message: 'Failed to submit reset request. Please try again later.' };
+        }
     },
 
-    logPasswordResetActivity: async (userId, userName, action) => {
-        const history = await AdminService._getData('gt_password_reset_history', []);
-        history.push({
-            id: Date.now(),
-            userId,
-            userName,
-            action,
-            timestamp: new Date().toISOString()
-        });
-        AdminService._saveData('gt_password_reset_history', history);
-        return true;
+    logPasswordResetActivity: async (userEmail, userName, action) => {
+        try {
+            const { error } = await supabase
+                .from('gt_password_reset_history')
+                .insert([{
+                    user_email: userEmail,
+                    user_name: userName,
+                    action: action,
+                    timestamp: new Date().toISOString()
+                }]);
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error('logPasswordResetActivity error:', error);
+            return false;
+        }
     },
 
     getPasswordResetHistory: async () => {
-        return AdminService._getData('gt_password_reset_history', []);
+        try {
+            const { data, error } = await supabase
+                .from('gt_password_reset_history')
+                .select('*')
+                .order('timestamp', { ascending: false });
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('getPasswordResetHistory error:', error);
+            return [];
+        }
     }
 };
 
