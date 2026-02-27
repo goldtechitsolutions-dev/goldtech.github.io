@@ -19,7 +19,7 @@ import {
     LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell
 } from 'recharts';
 
-const Admin = () => {
+const Admin = ({ currentUser }) => {
     const departmentDesignations = {
         'Engineering': ['Senior Developer', 'Junior Developer', 'QA Engineer', 'System Admin', 'Full Stack Developer'],
         'HR': ['HR Manager', 'HR Specialist', 'Recruitment Manager'],
@@ -34,12 +34,18 @@ const Admin = () => {
 
     const navigate = useNavigate();
 
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [username, setUsername] = useState('');
+    const [isLoggedIn, setIsLoggedIn] = useState(!!currentUser);
+    const [username, setUsername] = useState(currentUser?.name || '');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState('overview'); // overview, applications, employees, finance, projects, vault, chatbot
 
+    useEffect(() => {
+        if (currentUser) {
+            setUsername(currentUser.name);
+            setIsLoggedIn(true);
+        }
+    }, [currentUser]);
     // Data State
     const [stats, setStats] = useState([]);
     const [applications, setApplications] = useState([]);
@@ -114,6 +120,7 @@ const Admin = () => {
     const [apiKeys, setApiKeys] = useState([]);
     const [jitRequests, setJitRequests] = useState([]);
     const [auditLog, setAuditLog] = useState([]);
+    const [resetHistory, setResetHistory] = useState([]);
     const [industryMetrics, setIndustryMetrics] = useState(null);
     const [projectHealth, setProjectHealth] = useState([]);
     const [financialMetrics, setFinancialMetrics] = useState(null);
@@ -155,16 +162,11 @@ const Admin = () => {
     // Password Vault State
     const [visiblePasswords, setVisiblePasswords] = useState({});
 
-    // Forgot Password Flow State
-    const [isResetMode, setIsResetMode] = useState(false);
-    const [resetStep, setResetStep] = useState('identity'); // identity, security_key, new_password, success
-    const [resetIdentity, setResetIdentity] = useState('');
-    const [securityKeyInput, setSecurityKeyInput] = useState('');
-    const [newPasswordInput, setNewPasswordInput] = useState('');
-    const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
-    const [petNameInput, setPetNameInput] = useState('');
-    const [changeMindInput, setChangeMindInput] = useState('');
-    const [resetMessage, setResetMessage] = useState({ type: '', text: '' });
+    // Expansion state for Access Management sections
+    const [expandedSections, setExpandedSections] = useState({
+        privileged: false,
+        clients: false
+    });
 
     useEffect(() => {
         if (isLoggedIn) {
@@ -721,320 +723,57 @@ const Admin = () => {
     if (!isLoggedIn) {
         return (
             <div style={{
-                height: '100vh',
+                minHeight: '100vh',
                 display: 'flex',
-                justifyContent: 'center',
                 alignItems: 'center',
-                background: 'radial-gradient(circle at center, #001E3C 0%, #000B18 100%)',
-                overflow: 'hidden',
-                position: 'relative'
+                justifyContent: 'center',
+                background: 'radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%)',
+                padding: '20px'
             }}>
-                {/* Background Decoration */}
-                <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '40%', height: '40%', background: 'radial-gradient(circle, rgba(212, 175, 55, 0.05) 0%, transparent 70%)', filter: 'blur(80px)' }}></div>
-                <div style={{ position: 'absolute', bottom: '-10%', left: '-10%', width: '40%', height: '40%', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%)', filter: 'blur(80px)' }}></div>
-
-                {/* Background Logo Watermark */}
-                <div style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: 0.03,
-                    pointerEvents: 'none',
-                    zIndex: 0,
-                    userSelect: 'none'
-                }}>
-                    <img
-                        src={logo}
-                        alt=""
-                        style={{
-                            width: '80%',
-                            maxWidth: '800px',
-                            height: 'auto',
-                            filter: 'grayscale(100%) brightness(2) contrast(1.2)'
-                        }}
-                    />
-                </div>
-
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 30 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
                     style={{
-                        background: 'rgba(255, 255, 255, 0.03)',
+                        background: 'rgba(255, 255, 255, 0.05)',
                         backdropFilter: 'blur(20px)',
-                        WebkitBackdropFilter: 'blur(20px)',
-                        padding: '50px 40px',
-                        borderRadius: '24px',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
-                        width: '100%',
-                        maxWidth: '420px',
                         border: '1px solid rgba(255, 255, 255, 0.1)',
-                        zIndex: 1
+                        padding: '50px',
+                        borderRadius: '30px',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                        textAlign: 'center',
+                        maxWidth: '420px',
+                        width: '100%'
                     }}
                 >
-                    <div style={{ textAlign: 'center', marginBottom: '35px' }}>
-                        <div style={{
-                            width: '70px', height: '70px', margin: '0 auto 15px',
-                            background: 'rgba(212, 175, 55, 0.1)',
-                            borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            border: '1px solid rgba(212, 175, 55, 0.2)'
-                        }}>
-                            <img src={logo} alt="GoldTech Logo" style={{ height: '45px', filter: 'drop-shadow(0 0 10px rgba(212, 175, 55, 0.3))' }} />
-                        </div>
-                        <div style={{ marginBottom: '10px' }}>
-                            <span style={{ color: '#D4AF37', fontWeight: '800', fontSize: '1.6rem', letterSpacing: '2px', textShadow: '0 0 15px rgba(212, 175, 55, 0.3)' }}>GOLD</span>
-                            <span style={{ color: '#fff', fontWeight: '800', fontSize: '1.6rem', letterSpacing: '2px' }}>TECH</span>
-                        </div>
-                        <h2 style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
-                            {isResetMode ? 'Security Recovery' : 'Management Command Center'}
-                        </h2>
+                    <div style={{
+                        width: '70px', height: '70px', margin: '0 auto 15px',
+                        background: 'rgba(212, 175, 55, 0.1)',
+                        borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        border: '1px solid rgba(212, 175, 55, 0.2)'
+                    }}>
+                        <img src={logo} alt="GoldTech Logo" style={{ height: '45px' }} />
                     </div>
-
-                    {!isResetMode ? (
-                        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            <div style={{ position: 'relative' }}>
-                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' }}>Authentication Identity</label>
-                                <input
-                                    type="text"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    placeholder="Email / Username"
-                                    style={{
-                                        width: '100%', padding: '14px 16px', borderRadius: '12px',
-                                        background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)',
-                                        color: '#fff', fontSize: '1rem', outline: 'none', transition: 'all 0.3s'
-                                    }}
-                                    onFocus={(e) => { e.target.style.borderColor = '#D4AF37'; e.target.style.boxShadow = '0 0 10px rgba(212, 175, 55, 0.1)'; }}
-                                    onBlur={(e) => { e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'; e.target.style.boxShadow = 'none'; }}
-                                />
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' }}>Security Key</label>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                    style={{
-                                        width: '100%', padding: '14px 16px', borderRadius: '12px',
-                                        background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)',
-                                        color: '#fff', fontSize: '1rem', outline: 'none', transition: 'all 0.3s'
-                                    }}
-                                    onFocus={(e) => { e.target.style.borderColor = '#D4AF37'; e.target.style.boxShadow = '0 0 10px rgba(212, 175, 55, 0.1)'; }}
-                                    onBlur={(e) => { e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'; e.target.style.boxShadow = 'none'; }}
-                                />
-                            </div>
-                            {error && <p style={{ color: '#fb7185', fontSize: '0.85rem', textAlign: 'center', padding: '10px', borderRadius: '8px', background: 'rgba(225, 29, 72, 0.1)', border: '1px solid rgba(225, 29, 72, 0.2)' }}>{error}</p>}
-                            <button type="submit" style={{
-                                marginTop: '10px', background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
-                                color: '#000', border: 'none', padding: '16px', fontSize: '1rem', fontWeight: '800',
-                                borderRadius: '12px', cursor: 'pointer', transition: 'all 0.3s',
-                                boxShadow: '0 10px 20px -5px rgba(212, 175, 55, 0.3)',
-                                textTransform: 'uppercase', letterSpacing: '1px'
-                            }}
-                                onMouseEnter={(e) => { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 15px 25px -5px rgba(212, 175, 55, 0.4)'; }}
-                                onMouseLeave={(e) => { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 10px 20px -5px rgba(212, 175, 55, 0.3)'; }}
-                            >
-                                Authorize Access
-                            </button>
-
-                            <div style={{ textAlign: 'center', marginTop: '10px' }}>
-                                <button
-                                    type="button"
-                                    onClick={() => { setIsResetMode(true); setResetStep('identity'); setResetMessage({ type: '', text: '' }); }}
-                                    style={{
-                                        background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.9rem',
-                                        cursor: 'pointer', transition: 'color 0.3s', fontWeight: '500'
-                                    }}
-                                    onMouseEnter={(e) => { e.target.style.color = '#D4AF37'; }}
-                                    onMouseLeave={(e) => { e.target.style.color = '#94a3b8'; }}
-                                >
-                                    Forgot Security Key?
-                                </button>
-                            </div>
-                        </form>
-                    ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            {resetStep === 'identity' && (
-                                <form onSubmit={handleIdentitySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' }}>Confirm Identity</label>
-                                        <input
-                                            type="text"
-                                            value={resetIdentity}
-                                            onChange={(e) => setResetIdentity(e.target.value)}
-                                            placeholder="Email / Username"
-                                            style={{
-                                                width: '100%', padding: '14px 16px', borderRadius: '12px',
-                                                background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                color: '#fff', fontSize: '1rem', outline: 'none'
-                                            }}
-                                        />
-                                    </div>
-                                    <button type="submit" className="gold-button-premium">Search Account</button>
-                                </form>
-                            )}
-
-                            {resetStep === 'security_key' && (
-                                <form onSubmit={handleSecurityKeySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                    <div style={{ padding: '10px', borderRadius: '8px', background: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.1)', fontSize: '0.85rem', color: '#D4AF37', textAlign: 'center' }}>
-                                        Identity Confirmed: {resetIdentity}
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' }}>Enter Security Recovery Key</label>
-                                        <input
-                                            type="password"
-                                            value={securityKeyInput}
-                                            onChange={(e) => setSecurityKeyInput(e.target.value)}
-                                            placeholder="RECOVERY-KEY-XXXX"
-                                            style={{
-                                                width: '100%', padding: '14px 16px', borderRadius: '12px',
-                                                background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                color: '#fff', fontSize: '1rem', outline: 'none'
-                                            }}
-                                        />
-                                    </div>
-                                    <button type="submit" className="gold-button-premium">Verify Key</button>
-                                </form>
-                            )}
-
-                            {resetStep === 'security_questions' && (
-                                <form onSubmit={handleSecurityQuestionsSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                    <div style={{ padding: '10px', borderRadius: '8px', background: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.1)', fontSize: '0.85rem', color: '#D4AF37', textAlign: 'center' }}>
-                                        Key Verified. Answer Security Questions:
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' }}>What is your pet name?</label>
-                                        <input
-                                            type="text"
-                                            value={petNameInput}
-                                            onChange={(e) => setPetNameInput(e.target.value)}
-                                            placeholder="Enter Answer"
-                                            style={{
-                                                width: '100%', padding: '14px 16px', borderRadius: '12px',
-                                                background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                color: '#fff', fontSize: '1rem', outline: 'none'
-                                            }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' }}>What made you change mind ?</label>
-                                        <input
-                                            type="text"
-                                            value={changeMindInput}
-                                            onChange={(e) => setChangeMindInput(e.target.value)}
-                                            placeholder="Enter Answer"
-                                            style={{
-                                                width: '100%', padding: '14px 16px', borderRadius: '12px',
-                                                background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                color: '#fff', fontSize: '1rem', outline: 'none'
-                                            }}
-                                        />
-                                    </div>
-                                    <button type="submit" className="gold-button-premium">Verify Answers</button>
-                                </form>
-                            )}
-
-                            {resetStep === 'new_password' && (
-                                <form onSubmit={handleNewPasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' }}>New Security Key</label>
-                                        <input
-                                            type="password"
-                                            value={newPasswordInput}
-                                            onChange={(e) => setNewPasswordInput(e.target.value)}
-                                            placeholder="••••••••"
-                                            style={{
-                                                width: '100%', padding: '14px 16px', borderRadius: '12px',
-                                                background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                color: '#fff', fontSize: '1rem', outline: 'none'
-                                            }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' }}>Confirm Key</label>
-                                        <input
-                                            type="password"
-                                            value={confirmPasswordInput}
-                                            onChange={(e) => setConfirmPasswordInput(e.target.value)}
-                                            placeholder="••••••••"
-                                            style={{
-                                                width: '100%', padding: '14px 16px', borderRadius: '12px',
-                                                background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                color: '#fff', fontSize: '1rem', outline: 'none'
-                                            }}
-                                        />
-                                    </div>
-                                    <button type="submit" className="gold-button-premium">Update Access Key</button>
-                                </form>
-                            )}
-
-                            {resetStep === 'success' && (
-                                <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                                        <Check color="#10b981" size={32} />
-                                    </div>
-                                    <h3 style={{ color: '#fff', marginBottom: '10px' }}>Update Successful</h3>
-                                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '20px' }}>Your management access credentials have been successfully updated.</p>
-                                    <button
-                                        onClick={() => { setIsResetMode(false); setResetStep('identity'); }}
-                                        className="gold-button-premium"
-                                    >
-                                        Return to Login
-                                    </button>
-                                </div>
-                            )}
-
-                            {resetMessage.text && resetStep !== 'success' && (
-                                <p style={{
-                                    color: resetMessage.type === 'error' ? '#fb7185' : '#10b981',
-                                    fontSize: '0.85rem', textAlign: 'center', padding: '12px', borderRadius: '8px',
-                                    background: resetMessage.type === 'error' ? 'rgba(225, 29, 72, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                                    border: resetMessage.type === 'error' ? '1px solid rgba(225, 29, 72, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)',
-                                    wordBreak: 'break-word'
-                                }}>
-                                    {resetMessage.text}
-                                </p>
-                            )}
-
-                            {resetStep !== 'success' && (
-                                <div style={{ textAlign: 'center', marginTop: '10px' }}>
-                                    <button
-                                        type="button"
-                                        onClick={() => { setIsResetMode(false); setResetStep('identity'); setResetMessage({ type: '', text: '' }); }}
-                                        style={{
-                                            background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.9rem',
-                                            cursor: 'pointer', transition: 'color 0.3s', fontWeight: '500'
-                                        }}
-                                        onMouseEnter={(e) => { e.target.style.color = '#fff'; }}
-                                        onMouseLeave={(e) => { e.target.style.color = '#94a3b8'; }}
-                                    >
-                                        ← Cancel & Exit
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '10px', color: '#fff' }}>Secure Session Required</h2>
+                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '30px' }}>Your administrative session has ended or is unauthorized.</p>
+                    <button
+                        onClick={() => navigate('/')}
+                        style={{
+                            width: '100%',
+                            padding: '16px',
+                            background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                            color: '#000',
+                            border: 'none',
+                            borderRadius: '12px',
+                            fontWeight: '800',
+                            cursor: 'pointer',
+                            textTransform: 'uppercase',
+                            letterSpacing: '1px'
+                        }}
+                    >
+                        Return to Authentication
+                    </button>
                 </motion.div>
                 <style>{`
-                    input::placeholder { color: rgba(255,255,255,0.2); }
-                    .gold-button-premium {
-                        margin-top: 10px; background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
-                        color: #000; border: none; padding: 16px; fontSize: 1rem; fontWeight: 800;
-                        borderRadius: 12px; cursor: pointer; transition: all 0.3s;
-                        boxShadow: 0 10px 20px -5px rgba(212, 175, 55, 0.3);
-                        textTransform: uppercase; letterSpacing: 1px; width: 100%;
-                    }
-                    .gold-button-premium:hover {
-                        transform: translateY(-2px);
-                        boxShadow: 0 15px 25px -5px rgba(212, 175, 55, 0.4);
-                    }
                     .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
                     .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
                     .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.2); borderRadius: 10px; }
@@ -4074,38 +3813,93 @@ const Admin = () => {
 
                 {
                     activeTab === 'audit' && (
-                        <div style={cardStyle}>
-                            <h3 style={{ marginBottom: '25px', color: '#fff', fontSize: '1.2rem', fontWeight: '800' }}>Operational Audit Ledger</h3>
-                            <div style={{ overflowX: 'auto', paddingBottom: '10px' }} className="custom-scrollbar">
-                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                    <thead>
-                                        <tr style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
-                                            <th style={thStyle}>Time & Date</th>
-                                            <th style={thStyle}>Action Type</th>
-                                            <th style={thStyle}>Originator</th>
-                                            <th style={thStyle}>Payload Details</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {auditLog.map((log) => (
-                                            <tr key={log.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
-                                                <td style={{ ...tdStyle, color: '#94a3b8', fontSize: '0.85rem' }}>{log.timestamp}</td>
-                                                <td style={{ ...tdStyle, fontWeight: '700', color: '#D4AF37' }}>{log.action}</td>
-                                                <td style={tdStyle}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(255, 255, 255, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: '800', color: '#cbd5e1', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                                                            {log.user.charAt(0)}
-                                                        </div>
-                                                        <span style={{ fontWeight: '600' }}>{log.user}</span>
-                                                    </div>
-                                                </td>
-                                                <td style={tdStyle}>
-                                                    <span style={{ color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic' }}>Encryption active</span>
-                                                </td>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+                            <div style={cardStyle}>
+                                <h3 style={{ marginBottom: '25px', color: '#fff', fontSize: '1.2rem', fontWeight: '800' }}>Operational Audit Ledger</h3>
+                                <div style={{ overflowX: 'auto', paddingBottom: '10px' }} className="custom-scrollbar">
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                        <thead>
+                                            <tr style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
+                                                <th style={thStyle}>Time & Date</th>
+                                                <th style={thStyle}>Action Type</th>
+                                                <th style={thStyle}>Originator</th>
+                                                <th style={thStyle}>Payload Details</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {auditLog.map((log) => (
+                                                <tr key={log.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
+                                                    <td style={{ ...tdStyle, color: '#94a3b8', fontSize: '0.85rem' }}>{log.timestamp}</td>
+                                                    <td style={{ ...tdStyle, fontWeight: '700', color: '#D4AF37' }}>{log.action}</td>
+                                                    <td style={tdStyle}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(255, 255, 255, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: '800', color: '#cbd5e1', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                                                {log.user.charAt(0)}
+                                                            </div>
+                                                            <span style={{ fontWeight: '600' }}>{log.user}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td style={tdStyle}>
+                                                        <span style={{ color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic' }}>Encryption active</span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div style={cardStyle}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                                    <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800' }}>Security Event Records (Password Resets)</h3>
+                                    <Shield color="#D4AF37" size={20} />
+                                </div>
+                                <div style={{ overflowX: 'auto', paddingBottom: '10px' }} className="custom-scrollbar">
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                        <thead>
+                                            <tr style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
+                                                <th style={thStyle}>Event Timestamp</th>
+                                                <th style={thStyle}>Account Identifier</th>
+                                                <th style={thStyle}>Security Action</th>
+                                                <th style={thStyle}>Verification Trace</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {resetHistory.length > 0 ? resetHistory.map((entry) => (
+                                                <tr key={entry.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
+                                                    <td style={{ ...tdStyle, color: '#94a3b8', fontSize: '0.85rem' }}>
+                                                        {new Date(entry.timestamp).toLocaleString()}
+                                                    </td>
+                                                    <td style={{ ...tdStyle, fontWeight: '700', color: '#fff' }}>
+                                                        {entry.user_email}
+                                                    </td>
+                                                    <td style={tdStyle}>
+                                                        <span style={{
+                                                            padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800',
+                                                            background: entry.action === 'Reset' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                                                            color: entry.action === 'Reset' ? '#ef4444' : '#10b981',
+                                                            border: `1px solid ${entry.action === 'Reset' ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}`
+                                                        }}>
+                                                            {entry.action === 'Reset' ? 'SYSTEM FORCED RESET' : 'USER INITIATED UPDATE'}
+                                                        </span>
+                                                    </td>
+                                                    <td style={tdStyle}>
+                                                        <div style={{ color: '#64748b', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            <Lock size={12} />
+                                                            {entry.id.substring(0, 16).toUpperCase()}...
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )) : (
+                                                <tr>
+                                                    <td colSpan="4" style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>
+                                                        No security event records found.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     )
@@ -4451,7 +4245,10 @@ const Admin = () => {
                             {/* Operator Access (Employee Privileged Access Management) */}
                             <div style={cardStyle}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap', gap: '20px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                    <div
+                                        style={{ display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer', flex: 1 }}
+                                        onClick={() => setExpandedSections(prev => ({ ...prev, privileged: !prev.privileged }))}
+                                    >
                                         <div style={{
                                             width: '45px', height: '45px', background: 'rgba(212, 175, 55, 0.1)',
                                             borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -4460,7 +4257,10 @@ const Admin = () => {
                                             <ShieldAlert size={22} color="#D4AF37" />
                                         </div>
                                         <div>
-                                            <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#fff', margin: 0 }}>Privileged Access Management</h3>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#fff', margin: 0 }}>Privileged Access Management</h3>
+                                                {expandedSections.privileged ? <ChevronUp size={20} color="#D4AF37" /> : <ChevronDown size={20} color="#94a3b8" />}
+                                            </div>
                                             <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: 0 }}>Manage core administrative accounts and active directories.</p>
                                         </div>
                                     </div>
@@ -4480,80 +4280,94 @@ const Admin = () => {
                                         </button>
                                     </div>
                                 </div>
-                                <div style={{ overflowX: 'auto' }} className="custom-scrollbar">
-                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                        <thead>
-                                            <tr style={{ background: 'rgba(255, 255, 255, 0.02)', textAlign: 'left' }}>
-                                                <th style={thStyle}>Designation</th>
-                                                <th style={thStyle}>Identifier</th>
-                                                <th style={thStyle}>Clearance Level</th>
-                                                <th style={thStyle}>Department Unit</th>
-                                                <th style={thStyle}>System Status</th>
-                                                <th style={{ ...thStyle, textAlign: 'right' }}>Directives</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredUsers.map((user) => (
-                                                <tr key={user.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)', transition: 'background 0.2s', ':hover': { background: 'rgba(255,255,255,0.01)' } }}>
-                                                    <td style={{ ...tdStyle, fontWeight: '700', color: '#fff' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                            <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.8rem', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-                                                                {user.name.charAt(0)}
-                                                            </div>
-                                                            <div>
-                                                                <div>{user.name}</div>
-                                                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 'normal' }}>Employee ID: {user.employeeId || String(user.id).substring(0, 8)}</div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td style={{ ...tdStyle, color: '#94a3b8', fontSize: '0.9rem' }}>{user.email}</td>
-                                                    <td style={tdStyle}>
-                                                        <span style={{
-                                                            padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800',
-                                                            background: user.role === 'Super_Admin' ? 'rgba(239, 68, 68, 0.1)' : user.role === 'Admin' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                                                            color: user.role === 'Super_Admin' ? '#ef4444' : user.role === 'Admin' ? '#3b82f6' : '#10b981',
-                                                            border: `1px solid ${user.role === 'Super_Admin' ? 'rgba(239,68,68,0.2)' : user.role === 'Admin' ? 'rgba(59,130,246,0.2)' : 'rgba(16,185,129,0.2)'}`
-                                                        }}>
-                                                            {user.role}
-                                                        </span>
-                                                    </td>
-                                                    <td style={{ ...tdStyle, color: '#cbd5e1', fontSize: '0.9rem' }}>{user.department || 'Central Command'}</td>
-                                                    <td style={tdStyle}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: user.status === 'Active' ? '#10b981' : '#f59e0b', boxShadow: `0 0 8px ${user.status === 'Active' ? '#10b981' : '#f59e0b'}` }}></div>
-                                                            <span style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>{user.status}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td style={{ ...tdStyle, textAlign: 'right' }}>
-                                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                                            <button onClick={() => handleOpenUserModal(user)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '6px', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }} title="Edit Profile">
-                                                                <Edit size={14} />
-                                                            </button>
-                                                            <button onClick={() => handleDeleteUser(user.id)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '6px', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }} title="Revoke Access">
-                                                                <Trash2 size={14} />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                            {filteredUsers.length === 0 && (
-                                                <tr>
-                                                    <td colSpan="6" style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>
-                                                        <ShieldAlert size={48} style={{ opacity: 0.2, marginBottom: '10px' }} /><br />
-                                                        No identities match current filters.
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                <AnimatePresence>
+                                    {expandedSections.privileged && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            style={{ overflow: 'hidden' }}
+                                        >
+                                            <div style={{ overflowX: 'auto', marginTop: '20px' }} className="custom-scrollbar">
+                                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                                    <thead>
+                                                        <tr style={{ background: 'rgba(255, 255, 255, 0.02)', textAlign: 'left' }}>
+                                                            <th style={thStyle}>Designation</th>
+                                                            <th style={thStyle}>Identifier</th>
+                                                            <th style={thStyle}>Clearance Level</th>
+                                                            <th style={thStyle}>Department Unit</th>
+                                                            <th style={thStyle}>System Status</th>
+                                                            <th style={{ ...thStyle, textAlign: 'right' }}>Directives</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {filteredUsers.map((user) => (
+                                                            <tr key={user.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)', transition: 'background 0.2s', ':hover': { background: 'rgba(255,255,255,0.01)' } }}>
+                                                                <td style={{ ...tdStyle, fontWeight: '700', color: '#fff' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                        <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.8rem', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
+                                                                            {user.name.charAt(0)}
+                                                                        </div>
+                                                                        <div>
+                                                                            <div>{user.name}</div>
+                                                                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 'normal' }}>Employee ID: {user.employeeId || String(user.id).substring(0, 8)}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td style={{ ...tdStyle, color: '#94a3b8', fontSize: '0.9rem' }}>{user.email}</td>
+                                                                <td style={tdStyle}>
+                                                                    <span style={{
+                                                                        padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800',
+                                                                        background: user.role === 'Super_Admin' ? 'rgba(239, 68, 68, 0.1)' : user.role === 'Admin' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                                                                        color: user.role === 'Super_Admin' ? '#ef4444' : user.role === 'Admin' ? '#3b82f6' : '#10b981',
+                                                                        border: `1px solid ${user.role === 'Super_Admin' ? 'rgba(239,68,68,0.2)' : user.role === 'Admin' ? 'rgba(59,130,246,0.2)' : 'rgba(16,185,129,0.2)'}`
+                                                                    }}>
+                                                                        {user.role}
+                                                                    </span>
+                                                                </td>
+                                                                <td style={{ ...tdStyle, color: '#cbd5e1', fontSize: '0.9rem' }}>{user.department || 'Central Command'}</td>
+                                                                <td style={tdStyle}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: user.status === 'Active' ? '#10b981' : '#f59e0b', boxShadow: `0 0 8px ${user.status === 'Active' ? '#10b981' : '#f59e0b'}` }}></div>
+                                                                        <span style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>{user.status}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                                                        <button onClick={() => handleOpenUserModal(user)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '6px', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }} title="Edit Profile">
+                                                                            <Edit size={14} />
+                                                                        </button>
+                                                                        <button onClick={() => handleDeleteUser(user.id)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '6px', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }} title="Revoke Access">
+                                                                            <Trash2 size={14} />
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                        {filteredUsers.length === 0 && (
+                                                            <tr>
+                                                                <td colSpan="6" style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>
+                                                                    <ShieldAlert size={48} style={{ opacity: 0.2, marginBottom: '10px' }} /><br />
+                                                                    No identities match current filters.
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
                                 {/* Client Management Pipeline */}
                                 <div style={cardStyle}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap', gap: '20px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                        <div
+                                            style={{ display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer', flex: 1 }}
+                                            onClick={() => setExpandedSections(prev => ({ ...prev, clients: !prev.clients }))}
+                                        >
                                             <div style={{
                                                 width: '45px', height: '45px', background: 'rgba(212, 175, 55, 0.1)',
                                                 borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -4562,7 +4376,10 @@ const Admin = () => {
                                                 <UserPlus size={22} color="#D4AF37" />
                                             </div>
                                             <div>
-                                                <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800', margin: 0 }}>Client Management Pipeline</h3>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800', margin: 0 }}>Client Management Pipeline</h3>
+                                                    {expandedSections.clients ? <ChevronUp size={20} color="#D4AF37" /> : <ChevronDown size={20} color="#94a3b8" />}
+                                                </div>
                                                 <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: 0 }}>Manage enterprise client intake and setup</p>
                                             </div>
                                         </div>
@@ -4580,52 +4397,63 @@ const Admin = () => {
                                         </button>
                                     </div>
 
-                                    <div style={{ overflowX: 'auto', paddingBottom: '10px' }} className="custom-scrollbar">
-                                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                            <thead>
-                                                <tr style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
-                                                    <th style={thStyle}>Client Partner</th>
-                                                    <th style={thStyle}>Liaison</th>
-                                                    <th style={thStyle}>Onboarding Stage</th>
-                                                    <th style={thStyle}>Account Status</th>
-                                                    <th style={{ ...thStyle, textAlign: 'right' }}>Directives</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {clients.map((c) => (
-                                                    <tr key={c.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)', transition: 'all 0.3s' }}>
-                                                        <td style={{ ...tdStyle, fontWeight: '800', color: '#D4AF37' }}>
-                                                            {c.name}
-                                                        </td>
-                                                        <td style={tdStyle}>
-                                                            <div style={{ fontWeight: '700', color: '#fff' }}>{c.contactPerson || 'System Admin'}</div>
-                                                        </td>
-                                                        <td style={tdStyle}>
-                                                            <div style={{ fontSize: '0.9rem', color: '#cbd5e1' }}>{c.status === 'Active' ? 'Fully Setup' : 'Requirements Gathering'}</div>
-                                                            <div style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', marginTop: '5px' }}>
-                                                                <div style={{ width: c.status === 'Active' ? '100%' : '40%', height: '100%', background: c.status === 'Active' ? '#10b981' : '#f59e0b', borderRadius: '2px' }}></div>
-                                                            </div>
-                                                        </td>
-                                                        <td style={tdStyle}>
-                                                            <span style={statusBadge(c.status)}>{c.status}</span>
-                                                        </td>
-                                                        <td style={{ ...tdStyle, textAlign: 'right' }}>
-                                                            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                                                                <button onClick={() => handleOpenClientModal(c)} title="Continue Onboarding" style={{ color: '#3b82f6', background: 'rgba(59, 130, 246, 0.1)', border: 'none', cursor: 'pointer', padding: '8px 16px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800' }}>
-                                                                    MANAGE
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                                {clients.length === 0 && (
-                                                    <tr>
-                                                        <td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>No clients currently in pipeline.</td>
-                                                    </tr>
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    <AnimatePresence>
+                                        {expandedSections.clients && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                style={{ overflow: 'hidden' }}
+                                            >
+                                                <div style={{ overflowX: 'auto', paddingBottom: '10px', marginTop: '20px' }} className="custom-scrollbar">
+                                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                                        <thead>
+                                                            <tr style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
+                                                                <th style={thStyle}>Client Partner</th>
+                                                                <th style={thStyle}>Liaison</th>
+                                                                <th style={thStyle}>Onboarding Stage</th>
+                                                                <th style={thStyle}>Account Status</th>
+                                                                <th style={{ ...thStyle, textAlign: 'right' }}>Directives</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {clients.map((c) => (
+                                                                <tr key={c.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)', transition: 'all 0.3s' }}>
+                                                                    <td style={{ ...tdStyle, fontWeight: '800', color: '#D4AF37' }}>
+                                                                        {c.name}
+                                                                    </td>
+                                                                    <td style={tdStyle}>
+                                                                        <div style={{ fontWeight: '700', color: '#fff' }}>{c.contactPerson || 'System Admin'}</div>
+                                                                    </td>
+                                                                    <td style={tdStyle}>
+                                                                        <div style={{ fontSize: '0.9rem', color: '#cbd5e1' }}>{c.status === 'Active' ? 'Fully Setup' : 'Requirements Gathering'}</div>
+                                                                        <div style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', marginTop: '5px' }}>
+                                                                            <div style={{ width: c.status === 'Active' ? '100%' : '40%', height: '100%', background: c.status === 'Active' ? '#10b981' : '#f59e0b', borderRadius: '2px' }}></div>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td style={tdStyle}>
+                                                                        <span style={statusBadge(c.status)}>{c.status}</span>
+                                                                    </td>
+                                                                    <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                                                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                                                            <button onClick={() => handleOpenClientModal(c)} title="Continue Onboarding" style={{ color: '#3b82f6', background: 'rgba(59, 130, 246, 0.1)', border: 'none', cursor: 'pointer', padding: '8px 16px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800' }}>
+                                                                                MANAGE
+                                                                            </button>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                            {clients.length === 0 && (
+                                                                <tr>
+                                                                    <td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>No clients currently in pipeline.</td>
+                                                                </tr>
+                                                            )}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
 
                                 {/* Permissions Matrix Overview */}

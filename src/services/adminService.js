@@ -1202,10 +1202,12 @@ const AdminService = {
         const tempPassword = Math.random().toString(36).slice(-8);
         users[userIndex].password = tempPassword;
         users[userIndex].passwordAge = 0;
+        users[userIndex].password_updated_at = new Date().toISOString();
         users[userIndex].passwordStrength = 'Weak';
 
         AdminService._saveData('gt_users', users);
         await AdminService.logAudit(`Password Reset for User ID ${id}`, 'Admin');
+        await AdminService.logPasswordResetActivity(id, users[userIndex].name, 'Password Reset by Admin');
         return { success: true, message: `Password reset to: ${tempPassword}` };
     },
 
@@ -1231,10 +1233,12 @@ const AdminService = {
 
         users[userIndex].password = newPassword;
         users[userIndex].passwordAge = 0;
+        users[userIndex].password_updated_at = new Date().toISOString();
         users[userIndex].passwordStrength = 'Strong';
 
         AdminService._saveData('gt_users', users);
         await AdminService.logAudit(`Password Updated for User ID ${id}`, 'Admin');
+        await AdminService.logPasswordResetActivity(id, users[userIndex].name, 'Password Updated');
         return { success: true, message: 'Password updated successfully.' };
     },
 
@@ -1302,7 +1306,8 @@ const AdminService = {
         }
 
         try {
-            const { data, error } = await supabase
+            // 1. Check Employees/Admins (Users table)
+            const { data: userData, error: userError } = await supabase
                 .from('Users')
                 .select('*')
                 .or(`email.eq."${identifier}",name.eq."${identifier}"`)
@@ -1310,9 +1315,30 @@ const AdminService = {
                 .eq('status', 'Active')
                 .maybeSingle();
 
-            if (error) throw error;
-            if (data) {
-                return { success: true, user: data };
+            if (userError) throw userError;
+            if (userData) {
+                return { success: true, user: userData };
+            }
+
+            // 2. Check Clients (clients table)
+            const { data: clientData, error: clientError } = await supabase
+                .from('clients')
+                .select('*')
+                .eq('email', identifier)
+                .eq('password', password)
+                .eq('status', 'Active')
+                .maybeSingle();
+
+            if (clientError) throw clientError;
+            if (clientData) {
+                return {
+                    success: true,
+                    user: {
+                        ...clientData,
+                        role: 'Client',
+                        access: ['Client portal']
+                    }
+                };
             }
         } catch (error) {
             console.error('Authentication error:', error);
@@ -1322,6 +1348,20 @@ const AdminService = {
         const users = await AdminService.getUsers();
         const user = users.find(u => (u.email === identifier || u.name === identifier) && u.password === password && u.status === 'Active');
         if (user) return { success: true, user };
+
+        // Mock Clients Fallback
+        const clients = await AdminService.getClients();
+        const client = clients.find(c => c.email === identifier && c.password === password && c.status === 'Active');
+        if (client) {
+            return {
+                success: true,
+                user: {
+                    ...client,
+                    role: 'Client',
+                    access: ['Client portal']
+                }
+            };
+        }
 
         return { success: false, message: 'Invalid credentials or inactive account' };
     },
@@ -2660,6 +2700,56 @@ const AdminService = {
             return true;
         }
         return false;
+    },
+
+    // --- Password Security Methods ---
+    requestPasswordReset: async (identifier, portalName) => {
+        // 1. Identify User/Client
+        const users = await AdminService.getUsers();
+        const clients = await AdminService.getClients();
+        const target = users.find(u => u.email === identifier || u.name === identifier) ||
+            clients.find(c => c.email === identifier || c.name === identifier);
+
+        const name = target ? (target.name || target.email) : identifier;
+        const id = target ? target.id : 'Unknown';
+
+        // 2. Create Query (Visible in Admin)
+        const query = {
+            id: Date.now(),
+            name: name,
+            email: identifier,
+            subject: 'Password Reset Request',
+            message: `A password reset request was initiated for ${name} (${portalName} access). User ID: ${id}`,
+            date: new Date().toISOString(),
+            status: 'New',
+            type: 'Security'
+        };
+
+        const queries = await AdminService._getData('gt_queries', []);
+        queries.push(query);
+        AdminService._saveData('gt_queries', queries);
+
+        // 3. Log to History
+        await AdminService.logPasswordResetActivity(id, name, 'Reset Request Raised');
+
+        return { success: true, message: 'Password reset request submitted. An administrator will review your request shortly.' };
+    },
+
+    logPasswordResetActivity: async (userId, userName, action) => {
+        const history = await AdminService._getData('gt_password_reset_history', []);
+        history.push({
+            id: Date.now(),
+            userId,
+            userName,
+            action,
+            timestamp: new Date().toISOString()
+        });
+        AdminService._saveData('gt_password_reset_history', history);
+        return true;
+    },
+
+    getPasswordResetHistory: async () => {
+        return AdminService._getData('gt_password_reset_history', []);
     }
 };
 

@@ -77,10 +77,10 @@ const ActionButton = ({ onClick, children, variant = 'primary', icon: Icon, disa
     );
 };
 
-const ClientPortal = () => {
+const ClientPortal = ({ currentUser }) => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('dashboard');
-    const clientName = "TechCorp Inc"; // Mock Logged-in Client
+    const [clientName, setClientName] = useState(currentUser?.name || "Client");
 
     // Data State
     const [dashboardData, setDashboardData] = useState(null);
@@ -96,6 +96,12 @@ const ClientPortal = () => {
     // UI Toggles
     const [mfaEnabled, setMfaEnabled] = useState(false);
     const [ipWhitelist, setIpWhitelist] = useState('');
+
+    useEffect(() => {
+        if (currentUser) {
+            setClientName(currentUser.name);
+        }
+    }, [currentUser]);
 
     useEffect(() => {
         refreshData();
@@ -221,9 +227,11 @@ const ClientPortal = () => {
 
                 <div style={{ marginBottom: '30px', paddingBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#fff' }}>TC</div>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#fff' }}>
+                            {clientName.substring(0, 2).toUpperCase()}
+                        </div>
                         <div>
-                            <h3 style={{ color: '#fff', margin: 0, fontSize: '0.95rem' }}>TechCorp Inc</h3>
+                            <h3 style={{ color: '#fff', margin: 0, fontSize: '0.95rem' }}>{clientName}</h3>
                             <p style={{ color: '#94a3b8', fontSize: '0.75rem', margin: 0 }}>Premium Client</p>
                         </div>
                     </div>

@@ -36,28 +36,42 @@ const PortalAuth = ({ children, portalName }) => {
     const [loginLoading, setLoginLoading] = useState(false);
 
     // Versioned keys to force re-authentication after security updates
-    const getStorageKey = (name) => `gt_portal_user_v2_${name}`;
-    const getOldStorageKey = (name) => `gt_portal_user_${name}`;
+    const getStorageKey = (name) => `gt_portal_user_v3_${name}`;
+    const getOldStorageKey = (name) => `gt_portal_user_v2_${name}`;
 
     useEffect(() => {
         const checkSession = async () => {
             const storageKey = getStorageKey(portalName);
             const oldStorageKey = getOldStorageKey(portalName);
 
-            // Check if old storage exists and clear it (migration to v2)
+            // Migration clearing
             if (localStorage.getItem(oldStorageKey) || sessionStorage.getItem(oldStorageKey)) {
                 localStorage.removeItem(oldStorageKey);
                 sessionStorage.removeItem(oldStorageKey);
             }
 
-            // Check new storage types
-            const persistentUser = localStorage.getItem(storageKey);
-            const sessionUser = sessionStorage.getItem(storageKey);
-
-            const savedUser = persistentUser || sessionUser;
+            const savedUser = localStorage.getItem(storageKey) || sessionStorage.getItem(storageKey);
 
             if (savedUser) {
                 const parsedUser = JSON.parse(savedUser);
+
+                // Password Expiry Logic (45 Days)
+                if (parsedUser.password_updated_at) {
+                    const updatedDate = new Date(parsedUser.password_updated_at);
+                    const now = new Date();
+                    const diffTime = Math.abs(now - updatedDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (diffDays >= 45) {
+                        setError('Your password has expired (45 days). Please request a reset.');
+                        handleLogout();
+                        setLoading(false);
+                        return;
+                    } else if (diffDays >= 42) {
+                        setExpiryWarning(`Security Alert: Your password will expire in ${45 - diffDays} days. Please update it soon.`);
+                    }
+                }
+
                 setUser(parsedUser);
                 setIsLoggedIn(true);
             }
@@ -65,6 +79,31 @@ const PortalAuth = ({ children, portalName }) => {
         };
         checkSession();
     }, [portalName]);
+
+    const handleForgotRequest = async () => {
+        if (!identifier) {
+            setError('Please enter your email or username first.');
+            return;
+        }
+        setError('');
+        setLoginLoading(true);
+        try {
+            const res = await AdminService.requestPasswordReset(identifier, portalName);
+            if (res.success) {
+                setSuccessMessage(res.message);
+                setTimeout(() => {
+                    setForgotMode(false);
+                    setSuccessMessage('');
+                }, 5000);
+            } else {
+                setError(res.message);
+            }
+        } catch (err) {
+            setError('Failed to submit reset request.');
+        } finally {
+            setLoginLoading(false);
+        }
+    };
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -81,8 +120,8 @@ const PortalAuth = ({ children, portalName }) => {
 
                 if (hasAccess) {
                     const storageKey = getStorageKey(portalName);
-                    const storage = rememberMe ? localStorage : sessionStorage;
-                    storage.setItem(storageKey, JSON.stringify(authenticatedUser));
+                    // Always use sessionStorage for security since "Keep me signed in" is removed
+                    sessionStorage.setItem(storageKey, JSON.stringify(authenticatedUser));
 
                     setUser(authenticatedUser);
                     setIsLoggedIn(true);
@@ -108,6 +147,7 @@ const PortalAuth = ({ children, portalName }) => {
         setUser(null);
         setIdentifier('');
         setPassword('');
+        setExpiryWarning('');
     };
 
     if (loading) {
@@ -139,150 +179,249 @@ const PortalAuth = ({ children, portalName }) => {
                 </div>
 
                 <div style={{ width: '100%', maxWidth: '450px' }}>
-                    <GlassCard>
-                        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                            <div style={{
-                                width: '64px',
-                                height: '64px',
-                                background: 'rgba(212, 175, 55, 0.1)',
+                    {expiryWarning && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            style={{
+                                background: 'rgba(245, 158, 11, 0.15)',
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
                                 borderRadius: '16px',
+                                padding: '16px',
+                                color: '#fbbf24',
+                                marginBottom: '20px',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center',
-                                margin: '0 auto 16px'
-                            }}>
-                                <Lock size={32} color="#D4AF37" />
-                            </div>
-                            <h2 style={{ fontSize: '1.8rem', fontWeight: '700', marginBottom: '8px' }}>Portal Authentication</h2>
-                            <p style={{ color: '#94a3b8' }}>Please sign in to access the <span style={{ color: '#D4AF37', fontWeight: '600' }}>{portalName}</span></p>
-                        </div>
-
-                        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <label style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: '500' }}>Email or Username</label>
-                                <div style={{ position: 'relative' }}>
-                                    <User size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-                                    <input
-                                        type="text"
-                                        value={identifier}
-                                        onChange={(e) => setIdentifier(e.target.value)}
-                                        placeholder="Enter your credentials"
-                                        style={{
-                                            width: '100%',
-                                            padding: '14px 14px 14px 48px',
-                                            background: 'rgba(255, 255, 255, 0.05)',
-                                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                                            borderRadius: '12px',
-                                            color: '#fff',
-                                            fontSize: '1rem',
-                                            outline: 'none',
-                                            transition: 'border-color 0.2s'
-                                        }}
-                                        required
-                                    />
+                                gap: '12px',
+                                fontSize: '0.9rem'
+                            }}
+                        >
+                            <ShieldAlert size={20} />
+                            <span>{expiryWarning}</span>
+                        </motion.div>
+                    )}
+                    <GlassCard>
+                        {!forgotMode ? (
+                            <>
+                                <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                                    <div style={{
+                                        width: '64px',
+                                        height: '64px',
+                                        background: 'rgba(212, 175, 55, 0.1)',
+                                        borderRadius: '16px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        margin: '0 auto 16px'
+                                    }}>
+                                        <Lock size={32} color="#D4AF37" />
+                                    </div>
+                                    <h2 style={{ fontSize: '1.8rem', fontWeight: '700', marginBottom: '8px' }}>Portal Authentication</h2>
+                                    <p style={{ color: '#94a3b8' }}>Please sign in to access the <span style={{ color: '#D4AF37', fontWeight: '600' }}>{portalName}</span></p>
                                 </div>
-                            </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <label style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: '500' }}>Password</label>
-                                <div style={{ position: 'relative' }}>
-                                    <Key size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-                                    <input
-                                        type={showPassword ? 'text' : 'password'}
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="••••••••"
+                                <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <label style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: '500' }}>Email or Username</label>
+                                        <div style={{ position: 'relative' }}>
+                                            <User size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                                            <input
+                                                type="text"
+                                                value={identifier}
+                                                onChange={(e) => setIdentifier(e.target.value)}
+                                                placeholder="Enter your credentials"
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '14px 14px 14px 48px',
+                                                    background: 'rgba(255, 255, 255, 0.05)',
+                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                    borderRadius: '12px',
+                                                    color: '#fff',
+                                                    fontSize: '1rem',
+                                                    outline: 'none',
+                                                    transition: 'border-color 0.2s'
+                                                }}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <label style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: '500' }}>Password</label>
+                                        <div style={{ position: 'relative' }}>
+                                            <Key size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                                            <input
+                                                type={showPassword ? 'text' : 'password'}
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                placeholder="••••••••"
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '14px 48px 14px 48px',
+                                                    background: 'rgba(255, 255, 255, 0.05)',
+                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                    borderRadius: '12px',
+                                                    color: '#fff',
+                                                    fontSize: '1rem',
+                                                    outline: 'none'
+                                                }}
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+                                            >
+                                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setForgotMode(true)}
+                                            style={{ background: 'none', border: 'none', color: '#D4AF37', fontSize: '0.85rem', cursor: 'pointer', fontWeight: '500' }}
+                                        >
+                                            Forgot Password?
+                                        </button>
+                                    </div>
+
+                                    <AnimatePresence>
+                                        {error && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                                style={{
+                                                    padding: '12px',
+                                                    background: 'rgba(239, 68, 68, 0.1)',
+                                                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                                                    borderRadius: '8px',
+                                                    color: '#fca5a5',
+                                                    fontSize: '0.85rem',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '10px'
+                                                }}
+                                            >
+                                                <ShieldAlert size={16} />
+                                                {error}
+                                            </motion.div>
+                                        )}
+                                        {successMessage && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                                style={{
+                                                    padding: '12px',
+                                                    background: 'rgba(34, 197, 94, 0.1)',
+                                                    border: '1px solid rgba(34, 197, 94, 0.2)',
+                                                    borderRadius: '8px',
+                                                    color: '#86efac',
+                                                    fontSize: '0.85rem',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '10px'
+                                                }}
+                                            >
+                                                <ShieldCheck size={16} />
+                                                {successMessage}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        type="submit"
+                                        disabled={loginLoading}
                                         style={{
                                             width: '100%',
-                                            padding: '14px 48px 14px 48px',
-                                            background: 'rgba(255, 255, 255, 0.05)',
-                                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                                            borderRadius: '12px',
-                                            color: '#fff',
+                                            padding: '14px',
+                                            background: 'linear-gradient(135deg, #D4AF37 0%, #F2D06B 100%)',
+                                            color: '#0f172a',
+                                            fontWeight: '700',
                                             fontSize: '1rem',
-                                            outline: 'none'
+                                            border: 'none',
+                                            borderRadius: '12px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '10px',
+                                            boxShadow: '0 10px 15px -3px rgba(212, 175, 55, 0.3)'
                                         }}
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
                                     >
-                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        {loginLoading ? (
+                                            <motion.div
+                                                animate={{ rotate: 360 }}
+                                                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                                                style={{ width: '20px', height: '20px', border: '2px solid rgba(15, 23, 42, 0.3)', borderTopColor: '#0f172a', borderRadius: '50%' }}
+                                            />
+                                        ) : (
+                                            <>Sign In to Portal <ChevronRight size={18} /></>
+                                        )}
+                                    </motion.button>
+                                </form>
+                            </>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                <div style={{ textAlign: 'center' }}>
+                                    <h3 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '8px' }}>Reset Password</h3>
+                                    <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Enter your email to request a reset ticket.</p>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <label style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: '500' }}>Email Address</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <User size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                                        <input
+                                            type="email"
+                                            value={identifier}
+                                            onChange={(e) => setIdentifier(e.target.value)}
+                                            placeholder="your@email.com"
+                                            style={{
+                                                width: '100%',
+                                                padding: '14px 14px 14px 48px',
+                                                background: 'rgba(255, 255, 255, 0.05)',
+                                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                borderRadius: '12px',
+                                                color: '#fff',
+                                                outline: 'none'
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                                <AnimatePresence>
+                                    {error && (
+                                        <motion.div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', color: '#fca5a5', fontSize: '0.85rem' }}>
+                                            {error}
+                                        </motion.div>
+                                    )}
+                                    {successMessage && (
+                                        <motion.div style={{ padding: '12px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.2)', borderRadius: '8px', color: '#86efac', fontSize: '0.85rem' }}>
+                                            {successMessage}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                                <div style={{ display: 'flex', gap: '12px' }}>
+                                    <button
+                                        onClick={() => setForgotMode(false)}
+                                        style={{ flex: 1, padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', cursor: 'pointer' }}
+                                    >
+                                        Back
+                                    </button>
+                                    <button
+                                        onClick={handleForgotRequest}
+                                        disabled={loginLoading}
+                                        style={{ flex: 2, padding: '12px', background: '#D4AF37', border: 'none', borderRadius: '12px', color: '#0f172a', fontWeight: '700', cursor: 'pointer' }}
+                                    >
+                                        {loginLoading ? 'Sending...' : 'Request Reset'}
                                     </button>
                                 </div>
                             </div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#94a3b8', fontSize: '0.85rem' }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={rememberMe}
-                                        onChange={(e) => setRememberMe(e.target.checked)}
-                                        style={{ accentColor: '#D4AF37', cursor: 'pointer' }}
-                                    />
-                                    Keep me signed in
-                                </label>
-                            </div>
-
-                            <AnimatePresence>
-                                {error && (
-                                    <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        style={{
-                                            padding: '12px',
-                                            background: 'rgba(239, 68, 68, 0.1)',
-                                            border: '1px solid rgba(239, 68, 68, 0.2)',
-                                            borderRadius: '8px',
-                                            color: '#fca5a5',
-                                            fontSize: '0.85rem',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '10px'
-                                        }}
-                                    >
-                                        <ShieldAlert size={16} />
-                                        {error}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                type="submit"
-                                disabled={loginLoading}
-                                style={{
-                                    width: '100%',
-                                    padding: '14px',
-                                    background: 'linear-gradient(135deg, #D4AF37 0%, #F2D06B 100%)',
-                                    color: '#0f172a',
-                                    fontWeight: '700',
-                                    fontSize: '1rem',
-                                    border: 'none',
-                                    borderRadius: '12px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '10px',
-                                    boxShadow: '0 10px 15px -3px rgba(212, 175, 55, 0.3)'
-                                }}
-                            >
-                                {loginLoading ? (
-                                    <motion.div
-                                        animate={{ rotate: 360 }}
-                                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                                        style={{ width: '20px', height: '20px', border: '2px solid rgba(15, 23, 42, 0.3)', borderTopColor: '#0f172a', borderRadius: '50%' }}
-                                    />
-                                ) : (
-                                    <>Sign In to Portal <ChevronRight size={18} /></>
-                                )}
-                            </motion.button>
-                        </form>
+                        )}
                     </GlassCard>
                 </div>
 

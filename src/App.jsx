@@ -30,7 +30,7 @@ function App() {
   return (
     <>
       <Routes>
-        <Route path="/admin" element={<Admin />} />
+        <Route path="/admin" element={<PortalAuth portalName="Admin portal"><Admin /></PortalAuth>} />
 
         {/* Managed Portals with Auth */}
         <Route path="/hr" element={<PortalAuth portalName="HR portal"><HRPortal /></PortalAuth>} />
@@ -42,7 +42,7 @@ function App() {
         <Route path="/tasks" element={<PortalAuth portalName="Tasks portal"><ProjectManagementPortal /></PortalAuth>} />
         <Route path="/research" element={<PortalAuth portalName="Research & development portal"><ResearchPortal /></PortalAuth>} />
 
-        <Route path="/client" element={<ClientPortal />} />
+        <Route path="/client" element={<PortalAuth portalName="Client portal"><ClientPortal /></PortalAuth>} />
         <Route path="/create-profile" element={<CandidatePortal />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
