@@ -423,6 +423,11 @@ const Admin = () => {
             contactPerson: '',
             email: '',
             projectId: '',
+            projectName: '',
+            projectDetails: '',
+            projectManager: '',
+            businessHead: '',
+            expiryDate: '',
             clientId: generatedClientId,
             password: '',
             status: 'Active'
@@ -3031,7 +3036,7 @@ const Admin = () => {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Primary Contact</label>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Primary Contact (POC)</label>
                                                         <input
                                                             type="text"
                                                             value={formData.contactPerson || ''}
@@ -3063,6 +3068,57 @@ const Admin = () => {
                                                             placeholder="e.g. PRJ-1011"
                                                         />
                                                     </div>
+                                                </div>
+
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Project Name</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.projectName || ''}
+                                                            onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Project Manager</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.projectManager || ''}
+                                                            onChange={(e) => setFormData({ ...formData, projectManager: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Business Head Details</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.businessHead || ''}
+                                                            onChange={(e) => setFormData({ ...formData, businessHead: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Expiry Date</label>
+                                                        <input
+                                                            type="date"
+                                                            value={formData.expiryDate || ''}
+                                                            onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Project Details</label>
+                                                    <textarea
+                                                        value={formData.projectDetails || ''}
+                                                        onChange={(e) => setFormData({ ...formData, projectDetails: e.target.value })}
+                                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff', minHeight: '80px', resize: 'vertical' }}
+                                                    />
                                                 </div>
 
                                                 <div>
