@@ -34,18 +34,18 @@ const videoSlides = [
     },
     {
         id: 2,
-        videoSrc: p2Video,
-        title: "Expertise That Matters",
-        subtitle: "From Cloud Architecture to AI-driven insights, our team delivers excellence.",
-        cta: "View Expertise",
-        duration: 10000
-    },
-    {
-        id: 3,
         videoSrc: p1Video,
         title: "Innovating for Tomorrow",
         subtitle: "GoldTech IT Solutions: Where vision meets execution. We build the digital future.",
         cta: "Discover Our Vision",
+        duration: 10000
+    },
+    {
+        id: 3,
+        videoSrc: p2Video,
+        title: "Expertise That Matters",
+        subtitle: "From Cloud Architecture to AI-driven insights, our team delivers excellence.",
+        cta: "View Expertise",
         duration: 10000
     },
     {
