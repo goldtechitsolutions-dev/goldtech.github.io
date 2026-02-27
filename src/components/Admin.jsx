@@ -422,6 +422,7 @@ const Admin = () => {
         const generatedClientId = `CLI-${Math.floor(1000 + Math.random() * 9000)}`;
         setFormData(client ? { ...client, newPassword: '' } : {
             name: '',
+            industry: '',
             clientPhone: '',
             email: '',
             pocName: '',
@@ -3029,7 +3030,7 @@ const Admin = () => {
                                                 {selectedItem ? 'Refine Client Record' : 'Initialize Client Record'}
                                             </h2>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
                                                     <div>
                                                         <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Client Name</label>
                                                         <input
@@ -3039,6 +3040,25 @@ const Admin = () => {
                                                             style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff' }}
                                                             required
                                                         />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Industry</label>
+                                                        <select
+                                                            value={formData.industry || ''}
+                                                            onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            required
+                                                        >
+                                                            <option value="" disabled>Select Industry</option>
+                                                            <option value="Technology">Technology</option>
+                                                            <option value="Banking & Finance">Banking & Finance</option>
+                                                            <option value="Healthcare">Healthcare</option>
+                                                            <option value="Retail & E-commerce">Retail & E-commerce</option>
+                                                            <option value="Manufacturing">Manufacturing</option>
+                                                            <option value="Education">Education</option>
+                                                            <option value="Real Estate">Real Estate</option>
+                                                            <option value="Other">Other</option>
+                                                        </select>
                                                     </div>
                                                     <div>
                                                         <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Client Phone No</label>
