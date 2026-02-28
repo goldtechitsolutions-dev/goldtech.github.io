@@ -2810,8 +2810,7 @@ const AdminService = {
             const { data, error, count } = await supabase
                 .from(table)
                 .update({
-                    password: newPassword,
-                    password_updated_at: timestamp
+                    password: newPassword
                 })
                 .match(category === 'Employee' ? { employee_id: identifier } : { client_id: identifier })
                 .select();
@@ -2821,8 +2820,7 @@ const AdminService = {
                 const { data: idData, error: idError } = await supabase
                     .from(table)
                     .update({
-                        password: newPassword,
-                        password_updated_at: timestamp
+                        password: newPassword
                     })
                     .match({ id: identifier })
                     .select();

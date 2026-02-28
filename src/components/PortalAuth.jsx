@@ -59,8 +59,9 @@ const PortalAuth = ({ children, portalName }) => {
                 const parsedUser = JSON.parse(savedUser);
 
                 // Password Expiry Logic (45 Days)
-                if (parsedUser.password_updated_at) {
-                    const updatedDate = new Date(parsedUser.password_updated_at);
+                const lastUpdated = parsedUser.password_updated_at || parsedUser.updatedAt;
+                if (lastUpdated) {
+                    const updatedDate = new Date(lastUpdated);
                     const now = new Date();
                     const diffTime = Math.abs(now - updatedDate);
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
