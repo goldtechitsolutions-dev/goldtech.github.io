@@ -2109,49 +2109,15 @@ const Admin = ({ currentUser }) => {
                                                     <div style={{ display: 'flex', gap: '8px', marginTop: '5px' }}>
                                                         <button
                                                             onClick={() => {
-                                                                setResetTarget({
-                                                                    category: metadata?.category || 'Employee',
-                                                                    identifier: metadata?.identifier || q.email,
-                                                                    name: q.name,
-                                                                    requestId: metadata?.requestId || 'N/A',
-                                                                    ticketId: q.id,
-                                                                    contact: metadata?.contact || q.email,
-                                                                    kyc: metadata?.kyc
-                                                                });
-                                                                setIsResetModalOpen(true);
-                                                            }}
-                                                            style={{
-                                                                flex: 3, padding: '10px', background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
-                                                                border: 'none', borderRadius: '8px', color: '#000', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem'
-                                                            }}
-                                                        >
-                                                            Reset Password
-                                                        </button>
-                                                        <button
-                                                            onClick={() => {
                                                                 setSelectedItem(q);
                                                                 setModalType('query');
                                                             }}
                                                             style={{
-                                                                flex: 2, padding: '10px', background: 'rgba(59, 130, 246, 0.1)',
-                                                                border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '8px', color: '#3b82f6', fontWeight: '700', cursor: 'pointer', fontSize: '0.8rem'
+                                                                flex: 1, padding: '12px', background: 'rgba(59, 130, 246, 0.1)',
+                                                                border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '10px', color: '#3b82f6', fontWeight: '800', cursor: 'pointer', fontSize: '0.9rem'
                                                             }}
                                                         >
-                                                            Details
-                                                        </button>
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (confirm('Discard this security ticket?')) {
-                                                                    await AdminService.handleQueryStatusUpdate(q.id, 'Discarded');
-                                                                    refreshData();
-                                                                }
-                                                            }}
-                                                            style={{
-                                                                flex: 1, padding: '10px', background: 'rgba(239, 68, 68, 0.1)',
-                                                                border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', color: '#ef4444', fontWeight: '700', cursor: 'pointer', fontSize: '0.8rem'
-                                                            }}
-                                                        >
-                                                            Dismiss
+                                                            View Full Details & Take Action
                                                         </button>
                                                     </div>
                                                 </div>
@@ -3684,9 +3650,11 @@ const Admin = ({ currentUser }) => {
                                                                                 {selectedItem?.message?.includes('[SECURITY]') ? 'New Request' : 'New Lead'}
                                                                             </option>
                                                                             <option value="Read" style={{ background: '#1a1a1a', color: '#fff' }}>In Progress</option>
+                                                                            <option value="On Hold" style={{ background: '#1a1a1a', color: '#fff' }}>On Hold</option>
                                                                             <option value="Replied" style={{ background: '#1a1a1a', color: '#fff' }}>
-                                                                                {selectedItem?.message?.includes('[SECURITY]') ? 'Completed / Resolved' : 'Completed'}
+                                                                                {selectedItem?.message?.includes('[SECURITY]') ? 'Resolved' : 'Completed'}
                                                                             </option>
+                                                                            <option value="Discarded" style={{ background: '#1a1a1a', color: '#fff' }}>Dismissed</option>
                                                                         </>
                                                                     )}
                                                                     {modalType === 'meeting' && (
@@ -3699,21 +3667,98 @@ const Admin = ({ currentUser }) => {
                                                                     )}
                                                                 </select>
                                                                 <button
-                                                                    onClick={() => handleStatusUpdate(selectedItem.id, selectedItem.status, modalType)}
+                                                                    onClick={async () => {
+                                                                        if (selectedItem?.message?.includes('[SECURITY]')) {
+                                                                            const metadata = parseSecurityTicket(selectedItem.message);
+                                                                            if (selectedItem.status !== 'New') {
+                                                                                if (!selectedItem.statusReason || selectedItem.statusReason.length < 5) {
+                                                                                    alert('Please provide a valid reason for status change (min 5 chars).');
+                                                                                    return;
+                                                                                }
+                                                                                if (selectedItem.confirmedId !== metadata?.requestId) {
+                                                                                    alert(`Invalid Request ID. Please confirm with exactly: ${metadata?.requestId}`);
+                                                                                    return;
+                                                                                }
+                                                                            }
+
+                                                                            const updateData = {
+                                                                                ...selectedItem,
+                                                                                message: `${selectedItem.message}\n\n[ADMIN_ACTION ${new Date().toLocaleString()}] Status: ${selectedItem.status} | Reason: ${selectedItem.statusReason || 'N/A'}`
+                                                                            };
+                                                                            await AdminService.updateQuery(updateData);
+                                                                            await refreshData();
+                                                                            closeModal();
+                                                                        } else {
+                                                                            handleStatusUpdate(selectedItem.id, selectedItem.status, modalType);
+                                                                        }
+                                                                    }}
                                                                     style={{
-                                                                        padding: '10px 20px',
+                                                                        padding: '12px 25px',
                                                                         background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
                                                                         color: '#000',
                                                                         border: 'none',
                                                                         borderRadius: '10px',
-                                                                        fontWeight: 'bold',
+                                                                        fontWeight: '800',
                                                                         cursor: 'pointer',
-                                                                        fontSize: '0.85rem'
+                                                                        fontSize: '0.9rem'
                                                                     }}
                                                                 >
-                                                                    Save Changes
+                                                                    Save & Update Status
                                                                 </button>
                                                             </div>
+
+                                                            {selectedItem?.message?.includes('[SECURITY]') && (
+                                                                <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                                                    {selectedItem.status !== 'New' && (
+                                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                                                            <div>
+                                                                                <label style={{ color: '#94a3b8', fontSize: '0.75rem', display: 'block', marginBottom: '8px', fontWeight: '700' }}>Reason for Change (Required)</label>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    placeholder="Reason for Hold/Result..."
+                                                                                    value={selectedItem.statusReason || ''}
+                                                                                    onChange={(e) => setSelectedItem({ ...selectedItem, statusReason: e.target.value })}
+                                                                                    style={inputStyle}
+                                                                                />
+                                                                            </div>
+                                                                            <div>
+                                                                                <label style={{ color: '#94a3b8', fontSize: '0.75rem', display: 'block', marginBottom: '8px', fontWeight: '700' }}>Confirm Request ID</label>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    placeholder="Enter Ticket ID (e.g., GT-RST-...)"
+                                                                                    value={selectedItem.confirmedId || ''}
+                                                                                    onChange={(e) => setSelectedItem({ ...selectedItem, confirmedId: e.target.value })}
+                                                                                    style={inputStyle}
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    <div style={{ display: 'flex', justifyContent: 'center', padding: '15px', background: 'rgba(212, 175, 55, 0.05)', borderRadius: '12px', border: '1px dashed rgba(212, 175, 55, 0.2)' }}>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                const metadata = parseSecurityTicket(selectedItem.message);
+                                                                                setResetTarget({
+                                                                                    category: metadata?.category || 'Employee',
+                                                                                    identifier: metadata?.identifier || selectedItem.email,
+                                                                                    name: selectedItem.name,
+                                                                                    requestId: metadata?.requestId || 'N/A',
+                                                                                    ticketId: selectedItem.id,
+                                                                                    contact: metadata?.contact || selectedItem.email,
+                                                                                    kyc: metadata?.kyc
+                                                                                });
+                                                                                setIsResetModalOpen(true);
+                                                                            }}
+                                                                            style={{
+                                                                                background: 'transparent', border: '1px solid #D4AF37', color: '#D4AF37', padding: '10px 20px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px'
+                                                                            }}
+                                                                        >
+                                                                            <Lock size={16} />
+                                                                            Jump to Administrative Password Reset
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            )}
 
                                                             {modalType === 'application' && (
                                                                 <div style={{ marginTop: '20px' }}>
