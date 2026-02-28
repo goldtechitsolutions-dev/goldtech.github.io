@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
+import SEO from './SEO';
 
 const serviceData = {
     "custom-software-development": {
@@ -195,6 +196,12 @@ const ServiceDetail = () => {
             backgroundColor: '#0a0f2c',
             position: 'relative'
         }}>
+            <SEO
+                title={content.title}
+                description={content.overview.substring(0, 155)}
+                image={content.bgImage}
+                url={`services/${id}`}
+            />
             {/* Vibrant Cinematic Overlay */}
             <div style={{
                 position: 'fixed',
