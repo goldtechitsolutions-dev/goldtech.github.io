@@ -73,12 +73,14 @@ const Admin = ({ currentUser }) => {
             const catMatch = message.match(/\[CAT:\s*([^\]]+)\]/);
             const idMatch = message.match(/\[ID:\s*([^\]]+)\]/);
             const reqMatch = message.match(/\[REQ:\s*([^\]]+)\]/);
+            const kycMatch = message.match(/\[KYC:\s*([^\]]+)\]/);
             const contactMatch = message.match(/Contact:\s*(.*)/);
 
             return {
                 category: catMatch ? catMatch[1] : 'Unknown',
                 identifier: idMatch ? idMatch[1] : 'Unknown',
                 requestId: reqMatch ? reqMatch[1] : 'Unknown',
+                kyc: kycMatch ? kycMatch[1] : null,
                 contact: contactMatch ? contactMatch[1] : 'Unknown'
             };
         } catch (e) {
@@ -2082,8 +2084,25 @@ const Admin = ({ currentUser }) => {
                                                         </div>
                                                     </div>
 
+                                                    {metadata?.kyc && (
+                                                        <div style={{ background: 'rgba(212, 175, 55, 0.05)', padding: '12px', borderRadius: '10px', fontSize: '0.8rem', border: '1px solid rgba(212, 175, 55, 0.1)' }}>
+                                                            <div style={{ color: '#D4AF37', fontWeight: '800', marginBottom: '8px', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>KYC VERIFICATION DETAILS</div>
+                                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px' }}>
+                                                                {metadata.kyc.split(', ').map((detail, idx) => {
+                                                                    const [label, value] = detail.split(': ');
+                                                                    return (
+                                                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px' }}>
+                                                                            <span style={{ color: '#94a3b8' }}>{label}</span>
+                                                                            <span style={{ color: '#fff', fontWeight: '600' }}>{value}</span>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
                                                     <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '10px', fontSize: '0.85rem' }}>
-                                                        <div style={{ color: '#64748b', marginBottom: '4px' }}>Contact Details:</div>
+                                                        <div style={{ color: '#64748b', marginBottom: '4px' }}>Quick Contact:</div>
                                                         <div style={{ color: '#cbd5e1', fontWeight: '600', wordBreak: 'break-all' }}>{metadata?.contact || q.email || 'N/A'}</div>
                                                     </div>
 
@@ -2096,7 +2115,8 @@ const Admin = ({ currentUser }) => {
                                                                     name: q.name,
                                                                     requestId: metadata?.requestId || 'N/A',
                                                                     ticketId: q.id,
-                                                                    contact: metadata?.contact || q.email
+                                                                    contact: metadata?.contact || q.email,
+                                                                    kyc: metadata?.kyc
                                                                 });
                                                                 setIsResetModalOpen(true);
                                                             }}
@@ -3660,9 +3680,13 @@ const Admin = ({ currentUser }) => {
                                                                     )}
                                                                     {modalType === 'query' && (
                                                                         <>
-                                                                            <option value="New" style={{ background: '#1a1a1a', color: '#fff' }}>New Lead</option>
+                                                                            <option value="New" style={{ background: '#1a1a1a', color: '#fff' }}>
+                                                                                {selectedItem?.message?.includes('[SECURITY]') ? 'New Request' : 'New Lead'}
+                                                                            </option>
                                                                             <option value="Read" style={{ background: '#1a1a1a', color: '#fff' }}>In Progress</option>
-                                                                            <option value="Replied" style={{ background: '#1a1a1a', color: '#fff' }}>Completed</option>
+                                                                            <option value="Replied" style={{ background: '#1a1a1a', color: '#fff' }}>
+                                                                                {selectedItem?.message?.includes('[SECURITY]') ? 'Completed / Resolved' : 'Completed'}
+                                                                            </option>
                                                                         </>
                                                                     )}
                                                                     {modalType === 'meeting' && (
@@ -3871,7 +3895,7 @@ const Admin = ({ currentUser }) => {
 
                                             <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)', marginBottom: '25px' }}>
                                                 <p style={{ color: '#94a3b8', fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: '700', marginBottom: '10px' }}>Account Details</p>
-                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: resetTarget.kyc ? '15px' : '0' }}>
                                                     <div>
                                                         <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Identifier</span>
                                                         <p style={{ color: '#fff', fontWeight: '600', fontSize: '0.9rem' }}>{resetTarget.identifier}</p>
@@ -3881,6 +3905,22 @@ const Admin = ({ currentUser }) => {
                                                         <p style={{ color: '#D4AF37', fontWeight: '800', fontSize: '0.9rem' }}>{resetTarget.requestId}</p>
                                                     </div>
                                                 </div>
+                                                {resetTarget.kyc && (
+                                                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '15px' }}>
+                                                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '8px' }}>KYC VERIFICATION</span>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                                            {resetTarget.kyc.split(', ').map((detail, idx) => {
+                                                                const [label, value] = detail.split(': ');
+                                                                return (
+                                                                    <div key={idx}>
+                                                                        <span style={{ fontSize: '0.7rem', color: '#475569', display: 'block' }}>{label}</span>
+                                                                        <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: '500' }}>{value}</span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <form onSubmit={async (e) => {

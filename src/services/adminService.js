@@ -2722,22 +2722,30 @@ const AdminService = {
 
             const name = target ? (target.name || target.email) : identifier;
             const id = target ? (target.id || target.employee_id || target.client_id) : 'Unknown';
-            const contact = target ? (target.email || target.phone || identifier) : identifier;
+            const contact = target ? (target.email || target.phone || target.mobile || identifier) : identifier;
 
-            // 3. Create Query (Visible in Admin)
-            // Format: [SECURITY] [CAT: Category] [ID: ObjectID] [REQ: RequestID] Message
+            // 3. Prepare KYC Details
+            let kycDetails = '';
+            if (userMatch) {
+                kycDetails = `EmpID: ${userMatch.employee_id || 'N/A'}, Dept: ${userMatch.department || 'N/A'}, Desig: ${userMatch.designation || 'N/A'}, Phone: ${userMatch.mobile || 'N/A'}, DOB: ${userMatch.dob || 'N/A'}`;
+            } else if (clientMatch) {
+                kycDetails = `ClientID: ${clientMatch.client_id || 'N/A'}, POC: ${clientMatch.contactPerson || 'N/A'}, Industry: ${clientMatch.industry || 'N/A'}`;
+            }
+
+            // 4. Create Query (Visible in Admin)
+            // Format: [SECURITY] [CAT: Category] [ID: ObjectID] [REQ: RequestID] [KYC: Details] Message
             const { error: queryError } = await supabase
                 .from('queries')
                 .insert([{
                     name: name,
                     email: identifier,
-                    message: `[SECURITY] [CAT: ${category}] [ID: ${id}] [REQ: ${requestId}] Password reset request for ${name} (${portalName} access). Contact: ${contact}`,
+                    message: `[SECURITY] [CAT: ${category}] [ID: ${id}] [REQ: ${requestId}] [KYC: ${kycDetails}] Password reset request for ${name} (${portalName} access). Contact: ${contact}`,
                     status: 'New'
                 }]);
 
             if (queryError) throw queryError;
 
-            // 4. Log to History
+            // 5. Log to History
             await AdminService.logPasswordResetActivity(identifier, name, `Reset Request Raised (ID: ${requestId} | Cat: ${category})`);
 
             return { success: true, requestId, message: `Password reset request submitted successfully. Your Request ID is ${requestId}. Please quote this for follow-up.` };
