@@ -57,6 +57,7 @@ const Admin = ({ currentUser }) => {
     const [credentials, setCredentials] = useState([]); // Password Vault
     const [chatStats, setChatStats] = useState(null);
     const [chatLogs, setChatLogs] = useState([]);
+    const [leaveRequests, setLeaveRequests] = useState([]); // [FIX] Added for proper async fetching
     const [candidates, setCandidates] = useState([]);
     const [jobs, setJobs] = useState([]);
     const [companyInfo, setCompanyInfo] = useState({ address: '', email: '', phone: '', footerOpacity: 0.5 });
@@ -248,7 +249,7 @@ const Admin = ({ currentUser }) => {
         try {
             // Use Promise.all for parallel fetching
             const [
-                apps, qs, meets, usrs, rls, jbs,
+                apps, qs, meets, usrs, rls, jbs, leaves,
                 health, services, logs, infra, cLogs, keys, jit, audits, creds, sec,
                 metrics, proj, fin, info, fetchedClients, history, cLogs_fetched, cStats_fetched
             ] = await Promise.all([
@@ -258,6 +259,7 @@ const Admin = ({ currentUser }) => {
                 AdminService.getUsers(),
                 AdminService.getRoles(),
                 AdminService.getJobs(),
+                AdminService.getLeaveRequests(),
                 AdminService.getSystemHealth(),
                 AdminService.getServiceStatus(),
                 AdminService.getRecentLogs(),
@@ -285,6 +287,7 @@ const Admin = ({ currentUser }) => {
             setRoles(rls || []);
             setCandidates(apps || []); // Candidates are same as Applications
             setJobs(jbs || []);
+            setLeaveRequests(leaves || []); // [FIX] Store leave requests in state
             setSystemHealth(health || { cpu: 0, memory: 0, disk: 0, uptime: '0m' });
             setServiceStatus(services || []);
             setSystemLogs(logs || []);
@@ -1530,7 +1533,7 @@ const Admin = ({ currentUser }) => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {AdminService.getLeaveRequests().map(req => (
+                                            {leaveRequests && leaveRequests.length > 0 ? leaveRequests.map(req => (
                                                 <tr key={req.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
                                                     <td style={tdStyle}>{req.name}</td>
                                                     <td style={tdStyle}>{req.type}</td>
@@ -1539,7 +1542,13 @@ const Admin = ({ currentUser }) => {
                                                         <span style={statusBadge(req.status)}>{req.status}</span>
                                                     </td>
                                                 </tr>
-                                            ))}
+                                            )) : (
+                                                <tr>
+                                                    <td colSpan="4" style={{ textAlign: 'center', padding: "20px", color: "#94a3b8", fontStyle: "italic" }}>
+                                                        No pending leave requests.
+                                                    </td>
+                                                </tr>
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>
@@ -2604,7 +2613,11 @@ const Admin = ({ currentUser }) => {
                                         <div style={{ background: 'rgba(234, 179, 8, 0.1)', padding: '10px', borderRadius: '12px', color: '#eab308' }}>
                                             <Users size={24} />
                                         </div>
-                                        <span style={{ fontSize: '0.9rem', color: '#eab308', background: 'rgba(234, 179, 8, 0.1)', padding: '4px 10px', borderRadius: '20px' }}>{chatStats && chatStats.totalChats > 0 ? ((chatStats.leadsCaptured / chatStats.totalChats) * 100).toFixed(0) : 0}% Conv.</span>
+                                        <span style={{ fontSize: '0.9rem', color: '#eab308', background: 'rgba(234, 179, 8, 0.1)', padding: '4px 10px', borderRadius: '20px' }}>
+                                            {chatStats && chatStats.totalChats && chatStats.totalChats > 0
+                                                ? ((chatStats.leadsCaptured || 0) / chatStats.totalChats * 100).toFixed(0)
+                                                : 0}% Conv.
+                                        </span>
                                     </div>
                                     <h3 style={{ fontSize: '2rem', fontWeight: '700', margin: '0 0 5px 0' }}>{chatStats?.leadsCaptured || 0}</h3>
                                     <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>Leads Captured</p>
@@ -2686,10 +2699,10 @@ const Admin = ({ currentUser }) => {
                                                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                                     color: '#D4AF37', fontSize: '0.9rem', fontWeight: '700'
                                                                 }}>
-                                                                    {log.user.charAt(0)}
+                                                                    {(log.user || 'U').charAt(0)}
                                                                 </div>
                                                                 <div>
-                                                                    <div style={{ fontWeight: '600', color: '#f8fafc' }}>{log.user}</div>
+                                                                    <div style={{ fontWeight: '600', color: '#f8fafc' }}>{log.user || 'Visitor'}</div>
                                                                 </div>
                                                             </div>
                                                         </td>

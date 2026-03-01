@@ -2969,7 +2969,24 @@ const AdminService = {
                 .select('*')
                 .order('timestamp', { ascending: false });
             if (error) throw error;
-            return data || [];
+            
+            // Normalize data mapping (snake_case from Supabase -> camelCase for UI)
+            const normalizedData = (data || []).map(log => {
+                const timestamp = log.timestamp || log.created_at;
+                const dateObj = timestamp ? new Date(timestamp) : new Date();
+                
+                return {
+                    ...log,
+                    user: log.user || 'Unknown Visitor',
+                    formData: log.formData || log.form_data || {},
+                    date: log.date || dateObj.toLocaleDateString(),
+                    time: log.time || dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    status: log.status || 'Active',
+                    duration: log.duration || '2m'
+                };
+            });
+            
+            return normalizedData;
         } catch (error) {
             console.error('getChatLogs fallback to local:', error);
             return AdminService._getData('gt_chat_logs', []);
@@ -2981,7 +2998,7 @@ const AdminService = {
             const logs = await AdminService.getChatLogs();
             if (!logs || logs.length === 0) return { totalChats: 0, leadsCaptured: 0, avgDuration: '0m', satisfaction: 'N/A' };
 
-            const leadsCaptured = logs.filter(l => l.formData && (l.formData.email || l.formData.phone)).length;
+            const leadsCaptured = logs.filter(l => { const fd = l.formData || {}; return fd.email || fd.phone; }).length;
             return {
                 totalChats: logs.length,
                 leadsCaptured,
