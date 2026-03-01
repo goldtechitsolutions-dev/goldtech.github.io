@@ -2922,29 +2922,44 @@ const AdminService = {
 
     addChatLog: async (log) => {
         try {
-            const newLog = {
-                ...log,
-                timestamp: log.timestamp || new Date().toISOString()
+            // Map camelCase (frontend) to snake_case (Supabase)
+            const { formData, timestamp, ...rest } = log;
+            const payload = {
+                ...rest,
+                form_data: formData || log.formData || log.form_data || {},
+                date: log.date || new Date().toISOString().split('T')[0],
+                time: log.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
+
             const { data, error } = await supabase
                 .from('gt_chat_logs')
-                .insert([newLog])
+                .upsert([payload])
                 .select();
             if (error) throw error;
 
             // Sync to local
             const localLogs = await AdminService.getChatLogs();
-            localLogs.unshift(data[0]);
-            AdminService._saveData('gt_chat_logs', localLogs);
+            // deduplicate and unshift
+            const filtered = localLogs.filter(l => l.id !== data[0].id);
+            filtered.unshift(data[0]);
+            AdminService._saveData('gt_chat_logs', filtered);
 
             return data[0];
         } catch (error) {
             console.error('addChatLog fallback to local:', error);
             const logs = await AdminService._getData('gt_chat_logs', []);
-            const newLog = { ...log, id: Date.now(), timestamp: new Date().toISOString() };
-            logs.unshift(newLog);
-            AdminService._saveData('gt_chat_logs', logs);
-            return newLog;
+            const { formData, timestamp, ...rest } = log;
+            const fallbackLog = {
+                ...rest,
+                id: log.id || Date.now(),
+                form_data: formData || log.formData || log.form_data || {},
+                date: log.date || new Date().toISOString().split('T')[0],
+                time: log.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+            const filtered = logs.filter(l => l.id !== fallbackLog.id);
+            filtered.unshift(fallbackLog);
+            AdminService._saveData('gt_chat_logs', filtered);
+            return fallbackLog;
         }
     }
 };
