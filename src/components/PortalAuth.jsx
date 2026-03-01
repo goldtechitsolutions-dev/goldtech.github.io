@@ -76,6 +76,19 @@ const PortalAuth = ({ children, portalName }) => {
                     }
                 }
 
+                const requiredAccess = portalName.replace(/ portal$/i, '').toLowerCase();
+                const userRole = (parsedUser.role || '').toLowerCase();
+                const userAccessStr = (parsedUser.access || []).join(' ').toLowerCase();
+
+                const hasAccess = userRole === 'admin' || userAccessStr.includes(requiredAccess);
+
+                if (!hasAccess) {
+                    setError(`Access Denied: Session manipulation detected for ${portalName}.`);
+                    handleLogout();
+                    setLoading(false);
+                    return;
+                }
+
                 setUser(parsedUser);
                 setIsLoggedIn(true);
             }
@@ -120,14 +133,22 @@ const PortalAuth = ({ children, portalName }) => {
                 const authenticatedUser = res.user;
 
                 // Check if user has access to THIS specific portal
-                const hasAccess = authenticatedUser.role === 'Admin' || (authenticatedUser.access && authenticatedUser.access.includes(portalName));
+                const requiredAccess = portalName.replace(/ portal$/i, '').toLowerCase();
+                const userRole = (authenticatedUser.role || '').toLowerCase();
+                const userAccessStr = (authenticatedUser.access || []).join(' ').toLowerCase();
+
+                const hasAccess = userRole === 'admin' || userAccessStr.includes(requiredAccess);
 
                 if (hasAccess) {
                     const storageKey = getStorageKey(portalName);
-                    // Always use sessionStorage for security since "Keep me signed in" is removed
-                    sessionStorage.setItem(storageKey, JSON.stringify(authenticatedUser));
 
-                    setUser(authenticatedUser);
+                    // Create a sanitized user object lacking sensitive data
+                    const { password, securityKey, securityQuestions, ...sanitizedUser } = authenticatedUser;
+
+                    // Always use sessionStorage for security since "Keep me signed in" is removed
+                    sessionStorage.setItem(storageKey, JSON.stringify(sanitizedUser));
+
+                    setUser(sanitizedUser);
                     setIsLoggedIn(true);
                 } else {
                     setError(`Access Denied: You do not have permission to access the ${portalName}.`);

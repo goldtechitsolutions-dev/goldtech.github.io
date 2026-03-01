@@ -1,48 +1,58 @@
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import AboutPage from './components/AboutPage';
 import Layout from './components/Layout';
 import Home from './components/Home';
-import ServiceDetail from './components/ServiceDetail';
-import IndustryDetail from './components/IndustryDetail';
-import InsightDetail from './components/InsightDetail';
-import Services from './components/Services';
-import Industries from './components/Industries';
-import Insights from './components/Insights';
-
-import Products from './components/Products';
-import Career from './components/Career';
-import ContactForm from './components/ContactForm';
-import Admin from './components/Admin';
-import HRPortal from './components/HRPortal';
-import EmployeePortal from './components/EmployeePortal';
-import ManagerPortal from './components/ManagerPortal';
-import FinancePortal from './components/FinancePortal';
-import SalesPortal from './components/SalesPortal';
-import ClientPortal from './components/ClientPortal';
-import CandidatePortal from './components/CandidatePortal';
-import ProjectManagementPortal from './components/ProjectManagementPortal';
-import ResearchPortal from './components/ResearchPortal';
 import PortalAuth from './components/PortalAuth';
+
+const AboutPage = lazy(() => import('./components/AboutPage'));
+const ServiceDetail = lazy(() => import('./components/ServiceDetail'));
+const IndustryDetail = lazy(() => import('./components/IndustryDetail'));
+const InsightDetail = lazy(() => import('./components/InsightDetail'));
+const Services = lazy(() => import('./components/Services'));
+const Industries = lazy(() => import('./components/Industries'));
+const Insights = lazy(() => import('./components/Insights'));
+
+const Products = lazy(() => import('./components/Products'));
+const Career = lazy(() => import('./components/Career'));
+const ContactForm = lazy(() => import('./components/ContactForm'));
+const Admin = lazy(() => import('./components/Admin'));
+const HRPortal = lazy(() => import('./components/HRPortal'));
+const EmployeePortal = lazy(() => import('./components/EmployeePortal'));
+const ManagerPortal = lazy(() => import('./components/ManagerPortal'));
+const FinancePortal = lazy(() => import('./components/FinancePortal'));
+const SalesPortal = lazy(() => import('./components/SalesPortal'));
+const ClientPortal = lazy(() => import('./components/ClientPortal'));
+const CandidatePortal = lazy(() => import('./components/CandidatePortal'));
+const ProjectManagementPortal = lazy(() => import('./components/ProjectManagementPortal'));
+const ResearchPortal = lazy(() => import('./components/ResearchPortal'));
+
 import './App.css';
 import './components.css';
 
+const PageLoader = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#0f172a', color: '#D4AF37' }}>
+    <div className="spinner" style={{ width: '40px', height: '40px', border: '4px solid rgba(212, 175, 55, 0.3)', borderTop: '4px solid #D4AF37', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+    <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+  </div>
+);
+
 function App() {
   return (
-    <>
+    <Suspense fallback={<PageLoader />}>
       <Routes>
-        <Route path="/admin" element={<PortalAuth portalName="Admin portal"><Admin /></PortalAuth>} />
+        <Route path="/admin" element={<PortalAuth key="admin" portalName="Admin portal"><Admin /></PortalAuth>} />
 
         {/* Managed Portals with Auth */}
-        <Route path="/hr" element={<PortalAuth portalName="HR portal"><HRPortal /></PortalAuth>} />
-        <Route path="/employee" element={<PortalAuth portalName="Employee portal"><EmployeePortal /></PortalAuth>} />
-        <Route path="/manager" element={<PortalAuth portalName="Manager portal"><ManagerPortal /></PortalAuth>} />
-        <Route path="/finance" element={<PortalAuth portalName="Finance portal"><FinancePortal /></PortalAuth>} />
-        <Route path="/sales" element={<PortalAuth portalName="Sales portal"><SalesPortal /></PortalAuth>} />
-        <Route path="/project-management" element={<PortalAuth portalName="Project-management"><ProjectManagementPortal /></PortalAuth>} />
-        <Route path="/tasks" element={<PortalAuth portalName="Tasks portal"><ProjectManagementPortal /></PortalAuth>} />
-        <Route path="/research" element={<PortalAuth portalName="Research & development portal"><ResearchPortal /></PortalAuth>} />
+        <Route path="/hr" element={<PortalAuth key="hr" portalName="HR portal"><HRPortal /></PortalAuth>} />
+        <Route path="/employee" element={<PortalAuth key="employee" portalName="Employee portal"><EmployeePortal /></PortalAuth>} />
+        <Route path="/manager" element={<PortalAuth key="manager" portalName="Manager portal"><ManagerPortal /></PortalAuth>} />
+        <Route path="/finance" element={<PortalAuth key="finance" portalName="Finance portal"><FinancePortal /></PortalAuth>} />
+        <Route path="/sales" element={<PortalAuth key="sales" portalName="Sales portal"><SalesPortal /></PortalAuth>} />
+        <Route path="/project-management" element={<PortalAuth key="pm" portalName="Project-management"><ProjectManagementPortal /></PortalAuth>} />
+        <Route path="/tasks" element={<PortalAuth key="tasks" portalName="Tasks portal"><ProjectManagementPortal /></PortalAuth>} />
+        <Route path="/research" element={<PortalAuth key="research" portalName="Research & development portal"><ResearchPortal /></PortalAuth>} />
 
-        <Route path="/client" element={<PortalAuth portalName="Client portal"><ClientPortal /></PortalAuth>} />
+        <Route path="/client" element={<PortalAuth key="client" portalName="Client portal"><ClientPortal /></PortalAuth>} />
         <Route path="/create-profile" element={<CandidatePortal />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
@@ -65,7 +75,7 @@ function App() {
           <Route path="*" element={<Home />} />
         </Route>
       </Routes>
-    </>
+    </Suspense>
   );
 }
 

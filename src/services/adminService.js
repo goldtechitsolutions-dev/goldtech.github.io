@@ -1358,33 +1358,23 @@ const AdminService = {
     },
 
     authenticate: async (identifier, password) => {
-        // Hardcoded Demo Admin
-        if (identifier === 'admin' && password === 'admin123') {
-            return {
-                success: true,
-                user: {
-                    id: 'admin-id',
-                    name: 'Admin User',
-                    email: 'admin@goldtech.com',
-                    role: 'Admin',
-                    access: ['Admin', 'Sales portal', 'HR portal', 'Tasks portal', 'Project-management', 'Finance portal', 'Manager portal', 'Employee portal', 'Research & development portal']
-                }
-            };
-        }
-
         try {
             // 1. Check Employees/Admins (Users table)
             const { data: userData, error: userError } = await supabase
                 .from('Users')
                 .select('*')
                 .or(`email.eq."${identifier}",name.eq."${identifier}"`)
-                .eq('password', password)
                 .eq('status', 'Active')
                 .maybeSingle();
 
             if (userError) throw userError;
             if (userData) {
-                return { success: true, user: userData };
+                // Verify password locally to avoid sending it in the query string
+                if (userData.password === password) {
+                    return { success: true, user: userData };
+                } else {
+                    return { success: false, message: 'Invalid credentials or inactive account' };
+                }
             }
 
             // 2. Check Clients (clients table)
@@ -1392,32 +1382,36 @@ const AdminService = {
                 .from('clients')
                 .select('*')
                 .eq('email', identifier)
-                .eq('password', password)
                 .eq('status', 'Active')
                 .maybeSingle();
 
             if (clientError) throw clientError;
             if (clientData) {
-                return {
-                    success: true,
-                    user: {
-                        ...clientData,
-                        role: 'Client',
-                        access: ['Client portal']
-                    }
-                };
+                // Verify password locally
+                if (clientData.password === password) {
+                    return {
+                        success: true,
+                        user: {
+                            ...clientData,
+                            role: 'Client',
+                            access: ['Client portal']
+                        }
+                    };
+                } else {
+                    return { success: false, message: 'Invalid credentials or inactive account' };
+                }
             }
         } catch (error) {
             console.error('Authentication error:', error);
         }
 
-        // Fallback to local storage (Mock Data)
-        const users = await AdminService.getUsers();
+        // Fallback to local storage (Mock Data) only if Supabase fetch failed or returned nothing
+        const users = AdminService._getData('gt_users', initialUsers);
         const user = users.find(u => (u.email === identifier || u.name === identifier) && u.password === password && u.status === 'Active');
         if (user) return { success: true, user };
 
         // Mock Clients Fallback
-        const clients = await AdminService.getClients();
+        const clients = AdminService._getData('gt_clients', initialClients);
         const client = clients.find(c => c.email === identifier && c.password === password && c.status === 'Active');
         if (client) {
             return {

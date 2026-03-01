@@ -412,6 +412,7 @@ const Admin = ({ currentUser }) => {
     };
 
     const portals = [
+        'Admin portal',
         'Sales portal',
         'HR portal',
         'Tasks portal',
@@ -419,7 +420,8 @@ const Admin = ({ currentUser }) => {
         'Finance portal',
         'Manager portal',
         'Employee portal',
-        'Research & development portal'
+        'Research & development portal',
+        'Client portal'
     ];
 
     const recruitmentStages = ['review pending', 'under process', 'Interview scheduled', 'hired', 'rejected'];
@@ -2602,7 +2604,7 @@ const Admin = ({ currentUser }) => {
                                         <div style={{ background: 'rgba(234, 179, 8, 0.1)', padding: '10px', borderRadius: '12px', color: '#eab308' }}>
                                             <Users size={24} />
                                         </div>
-                                        <span style={{ fontSize: '0.9rem', color: '#eab308', background: 'rgba(234, 179, 8, 0.1)', padding: '4px 10px', borderRadius: '20px' }}>{chatStats ? ((chatStats.leadsCaptured / chatStats.totalChats) * 100).toFixed(0) : 0}% Conv.</span>
+                                        <span style={{ fontSize: '0.9rem', color: '#eab308', background: 'rgba(234, 179, 8, 0.1)', padding: '4px 10px', borderRadius: '20px' }}>{chatStats && chatStats.totalChats > 0 ? ((chatStats.leadsCaptured / chatStats.totalChats) * 100).toFixed(0) : 0}% Conv.</span>
                                     </div>
                                     <h3 style={{ fontSize: '2rem', fontWeight: '700', margin: '0 0 5px 0' }}>{chatStats?.leadsCaptured || 0}</h3>
                                     <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>Leads Captured</p>
@@ -3295,6 +3297,29 @@ const Admin = ({ currentUser }) => {
                                                             readOnly
                                                             style={{ width: '100%', padding: '12px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#94a3b8', cursor: 'not-allowed' }}
                                                         />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>System Role</label>
+                                                        <select
+                                                            value={formData.role || ''}
+                                                            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            required
+                                                        >
+                                                            <option value="" disabled>Select Role</option>
+                                                            {roles && roles.length > 0 ? roles.map((r, i) => (
+                                                                <option key={r.id || i} value={r.name}>{r.name}</option>
+                                                            )) : (
+                                                                <>
+                                                                    <option value="Admin">Admin</option>
+                                                                    <option value="HR">HR</option>
+                                                                    <option value="Developer">Developer</option>
+                                                                    <option value="Manager">Manager</option>
+                                                                    <option value="Employee">Employee</option>
+                                                                </>
+                                                            )}
+                                                            {roles && !roles.find(r => r.name === 'Employee') && <option value="Employee">Employee</option>}
+                                                        </select>
                                                     </div>
                                                 </div>
 
