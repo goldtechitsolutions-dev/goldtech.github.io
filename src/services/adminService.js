@@ -985,22 +985,7 @@ const AdminService = {
                 .order('date', { ascending: false });
 
             if (error) throw error;
-
-            // Merge local phone numbers since Supabase 'queries' table lacks the column
-            const localQueries = await AdminService._getData('gt_queries', initialQueries);
-
-            const mergedData = data.map(dbQuery => {
-                const localMatch = localQueries.find(lq => lq.email === dbQuery.email && lq.message === dbQuery.message);
-                if (localMatch && localMatch.phone) {
-                    return { ...dbQuery, phone: localMatch.phone };
-                }
-                return dbQuery;
-            });
-
-            // Make sure to include any mock initialQueries that might not be in DB for testing
-            const localOnlyQueries = localQueries.filter(lq => !data.some(dbq => dbq.email === lq.email && dbq.message === lq.message));
-
-            return [...mergedData, ...localOnlyQueries];
+            return data;
         } catch (error) {
             console.error('Supabase fetch queries error, falling back:', error);
             return AdminService._getData('gt_queries', initialQueries);
@@ -1009,33 +994,18 @@ const AdminService = {
 
     async addQuery(query) {
         try {
-            // The 'queries' table in Supabase might be missing the 'phone' column.
-            // We will attempt to insert without it to satisfy Supabase,
-            // but we will manually save the full object to our local cache.
             const { data, error } = await supabase
                 .from('queries')
                 .insert([{
                     name: query.name,
                     email: query.email,
+                    phone: query.phone,
                     message: query.message
                 }])
                 .select();
 
             if (error) throw error;
-
-            // Supabase insert succeeded (without phone), but we want the UI to have the phone.
-            const newQueryFromDB = data[0];
-            const fullQuery = { ...newQueryFromDB, phone: query.phone };
-
-            // Update local storage so the current session has the phone number
-            const queries = await AdminService.getQueries();
-            // Remove the exact db duplicate if it exists in local storage somehow
-            const filteredQueries = queries.filter(q => q.id !== fullQuery.id);
-            const newQueries = [fullQuery, ...filteredQueries];
-            AdminService._saveData('gt_queries', newQueries);
-
-            return fullQuery;
-
+            return data[0];
         } catch (error) {
             console.error('Supabase error, falling back to local storage:', error);
             const queries = await AdminService.getQueries();
