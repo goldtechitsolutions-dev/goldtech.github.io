@@ -1655,7 +1655,7 @@ const Admin = ({ currentUser }) => {
                                             <td style={tdStyle}>
                                                 <div style={{ fontWeight: '700', color: '#fff' }}>{q.name}</div>
                                                 <div style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    {q.email}
+                                                    Contact details: {q.email}
                                                     <button
                                                         onClick={() => { copyToClipboard(q.email); setCopiedId(`${q.id}-email`); setTimeout(() => setCopiedId(null), 2000); }}
                                                         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: copiedId === `${q.id}-email` ? '#10b981' : '#64748b', display: 'flex' }}

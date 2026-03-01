@@ -134,6 +134,13 @@ const initialUsers = [
         designation: 'Chief Technology Officer', dob: '1985-05-20', mobile: '9640786029', employee_id: 'GT-1001', access: ['Admin', 'Sales', 'HR', 'Finance', 'Manager']
     },
     {
+        id: 105, name: 'System Admin', email: 'sysadmin@goldtech.in', role: 'Admin', department: 'IT Operations', status: 'Active',
+        password: 'S3cur3!P@ssw0rd*2026', securityKey: '185576',
+        securityQuestions: { petName: 'Ramu', changeMind: 'DigN3' },
+        mfa: true, lastLogin: '2026-03-01 12:00 PM', passwordAge: 1, passwordStrength: 'Extremely Strong',
+        designation: 'Lead Administrator', dob: '1990-01-01', mobile: '0000000000', employee_id: 'GT-1005', access: ['Admin', 'Sales', 'HR', 'Finance', 'Manager', 'Project-management', 'Research']
+    },
+    {
         id: 102, name: 'John Dev', email: 'john.dev@goldtech.com', role: 'Developer', department: 'Engineering', status: 'Active',
         password: 'devPassword2@', securityKey: '185576',
         securityQuestions: { petName: 'Ramu', changeMind: 'DigN3' },
@@ -2969,12 +2976,12 @@ const AdminService = {
                 .select('*')
                 .order('timestamp', { ascending: false });
             if (error) throw error;
-            
+
             // Normalize data mapping (snake_case from Supabase -> camelCase for UI)
             const normalizedData = (data || []).map(log => {
                 const timestamp = log.timestamp || log.created_at;
                 const dateObj = timestamp ? new Date(timestamp) : new Date();
-                
+
                 return {
                     ...log,
                     user: log.user || 'Unknown Visitor',
@@ -2985,7 +2992,7 @@ const AdminService = {
                     duration: log.duration || '2m'
                 };
             });
-            
+
             return normalizedData;
         } catch (error) {
             console.error('getChatLogs fallback to local:', error);
