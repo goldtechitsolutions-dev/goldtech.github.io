@@ -99,8 +99,7 @@ const ChatBot = () => {
             const welcomeMsg = {
                 id: Date.now(),
                 text: `Hi ${formData.name}! 👋 I'm SONA. Thanks for sharing your details. Which of our specialized services can I assist you with today?`,
-                sender: 'bot',
-                options: serviceOptions
+                sender: 'bot'
             };
             setMessages([welcomeMsg]);
 

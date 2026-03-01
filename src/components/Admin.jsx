@@ -3644,21 +3644,21 @@ const Admin = ({ currentUser }) => {
                                                             <span style={{ color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', fontSize: '0.8rem', display: 'block', marginBottom: '10px' }}>Intelligence Log:</span>
                                                             <div style={{ maxHeight: '350px', overflowY: 'auto', background: 'rgba(0,0,0,0.3)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }} className="custom-scrollbar">
                                                                 {selectedItem.messages?.map((msg, idx) => (
-                                                                    <div key={idx} style={{ marginBottom: '15px', textAlign: msg.isBot ? 'left' : 'right' }}>
+                                                                    <div key={idx} style={{ marginBottom: '15px', textAlign: msg.sender === 'bot' ? 'left' : 'right' }}>
                                                                         <div style={{
                                                                             display: 'inline-block',
                                                                             padding: '12px 18px',
-                                                                            borderRadius: msg.isBot ? '16px 16px 16px 4px' : '16px 16px 4px 16px',
-                                                                            background: msg.isBot ? 'rgba(59, 130, 246, 0.1)' : 'rgba(212, 175, 55, 0.1)',
-                                                                            color: msg.isBot ? '#3b82f6' : '#D4AF37',
+                                                                            borderRadius: msg.sender === 'bot' ? '16px 16px 16px 4px' : '16px 16px 4px 16px',
+                                                                            background: msg.sender === 'bot' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(212, 175, 55, 0.1)',
+                                                                            color: msg.sender === 'bot' ? '#3b82f6' : '#D4AF37',
                                                                             fontSize: '0.95rem',
-                                                                            border: `1px solid ${msg.isBot ? 'rgba(59, 130, 246, 0.2)' : 'rgba(212, 175, 55, 0.2)'}`,
+                                                                            border: `1px solid ${msg.sender === 'bot' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(212, 175, 55, 0.2)'}`,
                                                                             maxWidth: '85%',
                                                                             lineHeight: '1.5'
                                                                         }}>
                                                                             {msg.text}
                                                                         </div>
-                                                                        <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '5px', fontWeight: '700' }}>{msg.isBot ? 'AI AGENT' : 'CLIENT'}</div>
+                                                                        <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '5px', fontWeight: '700' }}>{msg.sender === 'bot' ? 'AI AGENT' : 'CLIENT'}</div>
                                                                     </div>
                                                                 ))}
                                                             </div>
