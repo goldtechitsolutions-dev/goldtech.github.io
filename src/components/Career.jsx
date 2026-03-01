@@ -4,7 +4,7 @@ import { ArrowRight, Search, Filter, Code, Database, Globe, Cpu, PlayCircle, Che
 import { Link } from 'react-router-dom';
 import corporateTeam from '../assets/corporate-team.png';
 import AdminService from '../services/adminService';
-
+import SEO from './SEO';
 
 const Career = () => {
     // showForm can be false, 'apply', or 'profile'
@@ -108,6 +108,11 @@ const Career = () => {
             backgroundPosition: 'center',
             backgroundAttachment: 'fixed'
         }}>
+            <SEO
+                title="Careers"
+                description="Join GoldTech IT Solutions. View open positions and apply to be part of building the Gold Standard of Fintech Infrastructure."
+                url="career"
+            />
             {/* Light Overlay */}
             <div style={{
                 position: 'absolute',

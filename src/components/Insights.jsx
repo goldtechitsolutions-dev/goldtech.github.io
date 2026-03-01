@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import modernOffice from '../assets/modern-office.png';
+import SEO from './SEO';
 
 const insights = [
     { title: "The Future of AI in Banking", category: "Technology", date: "Oct 15, 2025" },
@@ -18,6 +19,11 @@ const Insights = () => {
             backgroundPosition: 'center',
             backgroundAttachment: 'fixed'
         }}>
+            <SEO
+                title="Insights & News"
+                description="Read the latest thought leadership, tech trends, and insights from GoldTech IT Solutions experts."
+                url="insights"
+            />
             {/* Dark Overlay */}
             <div style={{
                 position: 'absolute',

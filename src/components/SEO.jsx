@@ -25,6 +25,9 @@ const SEO = ({ title, description, keywords, image, url }) => {
             <meta name="twitter:title" content={fullTitle} />
             <meta name="twitter:description" content={metaDescription} />
             {image && <meta name="twitter:image" content={image} />}
+
+            {/* Canonical Link to prevent duplicate indexing */}
+            <link rel="canonical" href={fullUrl} />
         </Helmet>
     );
 };

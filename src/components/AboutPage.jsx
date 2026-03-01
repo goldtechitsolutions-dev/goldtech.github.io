@@ -6,6 +6,7 @@ import aboutMain from '../assets/about-main.jpg'; // User provided image
 import corporateTeam from '../assets/corporate-team.png';
 import innovationBg from '../assets/innovation.png';
 import modernOffice from '../assets/modern-office.png';
+import SEO from './SEO';
 
 const AboutPage = () => {
     return (
@@ -17,6 +18,11 @@ const AboutPage = () => {
             backgroundPosition: 'center',
             backgroundAttachment: 'fixed'
         }}>
+            <SEO
+                title="About Us"
+                description="Discover GoldTech IT Solutions. We are a global technology partner dedicated to transforming businesses through innovation, integrity, and intelligent solutions."
+                url="about"
+            />
             {/* Hero Section */}
             <div className="detail-hero" style={{
                 background: `linear-gradient(135deg, rgba(0, 44, 95, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%), url(${innovationBg})`,

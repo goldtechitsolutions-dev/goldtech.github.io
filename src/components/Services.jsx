@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Code, Server, Shield, Database, Cpu, Globe, Megaphone, Smartphone, Briefcase } from 'lucide-react';
 import imBg from '../assets/im.png';
+import SEO from './SEO';
 
 const services = [
     {
@@ -62,6 +63,11 @@ const Services = () => {
             backgroundAttachment: 'fixed',
             color: '#fff' // Ensure text is readable on dark overlay
         }}>
+            <SEO
+                title="Our Services"
+                description="Explore GoldTech IT Solutions' comprehensive range of services including Custom Software Development, Cloud Infrastructure, Cybersecurity, and AI & Machine Learning."
+                url="services"
+            />
             {/* Dark Overlay */}
             <div style={{
                 position: 'absolute',

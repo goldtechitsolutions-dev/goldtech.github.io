@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Box, Layers, Zap } from 'lucide-react';
 import modernOffice from '../assets/modern-office.png';
+import SEO from './SEO';
 
 const products = [
     { icon: Box, title: "Enterprise ERP", desc: "Comprehensive resource planning for large-scale operations." },
@@ -19,6 +20,11 @@ const Products = () => {
             backgroundAttachment: 'fixed',
             color: '#fff'
         }}>
+            <SEO
+                title="Our Products"
+                description="Discover GoldTech's scalable software solutions designed for the modern enterprise, including Enterprise ERP and Supply Chain Suites."
+                url="products"
+            />
             {/* Dark Overlay */}
             <div style={{
                 position: 'absolute',

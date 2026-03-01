@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Hammer, Landmark, Umbrella, HeartPulse, GraduationCap, Home, Cpu, Plane, Tv, Zap, Factory } from 'lucide-react';
 import modernOffice from '../assets/modern-office.png';
+import SEO from './SEO';
 
 const industries = [
     { icon: HeartPulse, title: "HEALTH CARE", description: "Advanced patient systems and telemedicine platforms." },
@@ -30,6 +31,11 @@ const Industries = () => {
             backgroundAttachment: 'fixed',
             color: '#fff'
         }}>
+            <SEO
+                title="Industries We Serve"
+                description="GoldTech provides domain-specific expertise and specialized IT solutions across Healthcare, Finance, Retail, Manufacturing, and more."
+                url="industries"
+            />
             {/* Dark Overlay */}
             <div style={{
                 position: 'absolute',

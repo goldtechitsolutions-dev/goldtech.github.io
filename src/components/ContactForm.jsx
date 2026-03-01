@@ -4,6 +4,7 @@ import { User, Mail, MessageSquare, MapPin, Phone, Send, Globe, Star, ChevronDow
 import contactBg from '../assets/im2.png';
 import AdminService from '../services/adminService';
 import { countryCodes } from '../utils/countryData';
+import SEO from './SEO';
 
 const ContactForm = () => {
     const [status, setStatus] = useState("");
@@ -111,6 +112,11 @@ const ContactForm = () => {
             display: 'flex',
             alignItems: 'center'
         }}>
+            <SEO
+                title="Contact Us"
+                description="Get in touch with GoldTech IT Solutions. We are ready to partner with you to transform your digital future."
+                url="contact"
+            />
             {/* Dark Premium Overlay */}
             <div style={{
                 position: 'absolute',
