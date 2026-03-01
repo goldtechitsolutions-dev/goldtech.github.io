@@ -17,8 +17,8 @@ const initialApplications = [
 
 
 const initialQueries = [
-    { id: 1, name: 'Alice Brown', email: 'alice@company.com', message: 'Project Inquiry', date: '2023-10-26', status: 'New' },
-    { id: 2, name: 'Bob Wilson', email: 'bob@test.com', message: 'Partnership Proposal', date: '2023-10-25', status: 'Replied' },
+    { id: 1, name: 'Alice Brown', email: 'alice@company.com', phone: '123-456-7890', message: 'Project Inquiry', date: '2023-10-26', status: 'New' },
+    { id: 2, name: 'Bob Wilson', email: 'bob@test.com', phone: '987-654-3210', message: 'Partnership Proposal', date: '2023-10-25', status: 'Replied' },
 ];
 
 const initialLeaveRequests = [
@@ -999,6 +999,7 @@ const AdminService = {
                 .insert([{
                     name: query.name,
                     email: query.email,
+                    phone: query.phone,
                     message: query.message
                 }])
                 .select();
