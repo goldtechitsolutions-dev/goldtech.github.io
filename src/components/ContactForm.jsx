@@ -222,7 +222,7 @@ const ContactForm = () => {
                                 <input
                                     type="text"
                                     name="name"
-                                    placeholder="Type here..."
+                                    placeholder="Enter your full name..."
                                     required
                                     style={{
                                         width: '100%',
@@ -246,7 +246,7 @@ const ContactForm = () => {
                                 <input
                                     type="email"
                                     name="email"
-                                    placeholder="Type here..."
+                                    placeholder="Enter your email address..."
                                     required
                                     style={{
                                         width: '100%',
@@ -384,7 +384,7 @@ const ContactForm = () => {
                                         <input
                                             type="tel"
                                             name="phone"
-                                            placeholder="Type here..."
+                                            placeholder="Enter your mobile number..."
                                             required
                                             onChange={() => setPhoneError("")}
                                             style={{
@@ -427,7 +427,7 @@ const ContactForm = () => {
                                 <textarea
                                     name="message"
                                     rows="4"
-                                    placeholder="Type here..."
+                                    placeholder="Enter your message..."
                                     required
                                     style={{
                                         width: '100%',
