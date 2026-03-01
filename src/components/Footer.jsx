@@ -55,6 +55,16 @@ const Footer = () => {
                             <li><Link to="/contact" onClick={() => window.scrollTo(0, 0)}>Contact</Link></li>
                         </ul>
                     </div>
+
+                    <div className="footer-links" style={{ marginLeft: 'auto' }}>
+                        <h4>Service Areas</h4>
+                        <ul style={{ color: 'var(--color-text-muted)' }}>
+                            <li><Link to="/locations/new-york" onClick={() => window.scrollTo(0, 0)}>New York</Link></li>
+                            <li><Link to="/locations/london" onClick={() => window.scrollTo(0, 0)}>London</Link></li>
+                            <li><Link to="/locations/dubai" onClick={() => window.scrollTo(0, 0)}>Dubai</Link></li>
+                            <li><Link to="/locations/singapore" onClick={() => window.scrollTo(0, 0)}>Singapore</Link></li>
+                        </ul>
+                    </div>
                 </div>
                 <div className="copyright">
                     <p>&copy; {new Date().getFullYear()} GoldTech IT Solutions. All rights reserved.</p>

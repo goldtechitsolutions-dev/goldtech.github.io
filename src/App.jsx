@@ -15,6 +15,7 @@ const Insights = lazy(() => import('./components/Insights'));
 const Products = lazy(() => import('./components/Products'));
 const Career = lazy(() => import('./components/Career'));
 const ContactForm = lazy(() => import('./components/ContactForm'));
+const LocationSEO = lazy(() => import('./components/LocationSEO'));
 const Admin = lazy(() => import('./components/Admin'));
 const HRPortal = lazy(() => import('./components/HRPortal'));
 const EmployeePortal = lazy(() => import('./components/EmployeePortal'));
@@ -70,6 +71,7 @@ function App() {
           <Route path="products" element={<Products />} />
           <Route path="career" element={<Career />} />
           <Route path="contact" element={<ContactForm />} />
+          <Route path="locations/:city" element={<LocationSEO />} />
 
           {/* Fallback route - go to home */}
           <Route path="*" element={<Home />} />
