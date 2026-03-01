@@ -1643,6 +1643,7 @@ const Admin = ({ currentUser }) => {
                                 <thead>
                                     <tr style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
                                         <th style={thStyle}>Identity Profile</th>
+                                        <th style={thStyle}>Contact</th>
                                         <th style={thStyle}>Message</th>
                                         <th style={thStyle}>Sales Intelligence</th>
                                         <th style={thStyle}>Temporal Activity</th>
@@ -1654,15 +1655,31 @@ const Admin = ({ currentUser }) => {
                                         <tr key={q.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
                                             <td style={tdStyle}>
                                                 <div style={{ fontWeight: '700', color: '#fff' }}>{q.name}</div>
-                                                <div style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    Contact details: {q.email}
-                                                    <button
-                                                        onClick={() => { copyToClipboard(q.email); setCopiedId(`${q.id}-email`); setTimeout(() => setCopiedId(null), 2000); }}
-                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: copiedId === `${q.id}-email` ? '#10b981' : '#64748b', display: 'flex' }}
-                                                        title="Copy Email"
-                                                    >
-                                                        {copiedId === `${q.id}-email` ? <Check size={12} /> : <Copy size={12} />}
-                                                    </button>
+                                            </td>
+                                            <td style={tdStyle}>
+                                                <div style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        {q.email}
+                                                        <button
+                                                            onClick={() => { copyToClipboard(q.email); setCopiedId(`${q.id}-email`); setTimeout(() => setCopiedId(null), 2000); }}
+                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: copiedId === `${q.id}-email` ? '#10b981' : '#64748b', display: 'flex' }}
+                                                            title="Copy Email"
+                                                        >
+                                                            {copiedId === `${q.id}-email` ? <Check size={12} /> : <Copy size={12} />}
+                                                        </button>
+                                                    </div>
+                                                    {q.phone && (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            {q.phone}
+                                                            <button
+                                                                onClick={() => { copyToClipboard(q.phone); setCopiedId(`${q.id}-phone`); setTimeout(() => setCopiedId(null), 2000); }}
+                                                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: copiedId === `${q.id}-phone` ? '#10b981' : '#64748b', display: 'flex' }}
+                                                                title="Copy Phone Number"
+                                                            >
+                                                                {copiedId === `${q.id}-phone` ? <Check size={12} /> : <Copy size={12} />}
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td style={tdStyle}>
