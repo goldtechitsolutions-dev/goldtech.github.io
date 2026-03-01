@@ -7,8 +7,9 @@ const Footer = () => {
     const [companyInfo, setCompanyInfo] = useState({ address: '', email: '', phone: '' });
 
     useEffect(() => {
-        const fetchInfo = () => {
-            setCompanyInfo(AdminService.getCompanyInfo());
+        const fetchInfo = async () => {
+            const data = await AdminService.getCompanyInfo();
+            setCompanyInfo(data);
         };
 
         fetchInfo();
@@ -39,9 +40,9 @@ const Footer = () => {
                     <div className="footer-contact">
                         <h4>Contact Us</h4>
                         <ul className="contact-info">
-                            <li><span style={{ opacity: companyInfo.footerOpacity || 0.5 }}>📍 {companyInfo.address}</span></li>
-                            <li>📧 {companyInfo.email}</li>
-                            <li>📞 {companyInfo.phone}</li>
+                            <li><span style={{ opacity: companyInfo.footerOpacity !== undefined ? companyInfo.footerOpacity : 1 }}>📍 {companyInfo.address || 'Address not configured'}</span></li>
+                            <li>📧 {companyInfo.email || 'Email not configured'}</li>
+                            <li>📞 {companyInfo.phone || 'Phone not configured'}</li>
                         </ul>
                     </div>
 

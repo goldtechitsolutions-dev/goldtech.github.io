@@ -1,6 +1,6 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight, Search, Filter, Code, Database, Globe, Cpu, PlayCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, Search, Filter, Code, Database, Globe, Cpu, PlayCircle, ChevronDown, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import corporateTeam from '../assets/corporate-team.png';
 import AdminService from '../services/adminService';
@@ -9,8 +9,9 @@ import AdminService from '../services/adminService';
 const Career = () => {
     // showForm can be false, 'apply', or 'profile'
     const [showForm, setShowForm] = React.useState(false);
+    const [selectedJob, setSelectedJob] = React.useState(null);
+    const [experienceLvl, setExperienceLvl] = React.useState('Fresher');
     const [status, setStatus] = React.useState("");
-    console.log("Career Component Loaded (Version: BOTTOM_POSITION)");
 
     const [jobs, setJobs] = React.useState(() => {
         const cached = AdminService.getJobsImmediate();
@@ -62,6 +63,11 @@ const Career = () => {
         // Add extra fields to FormData
         formData.append('role', currentJob.title);
         formData.append('source', 'Career Page');
+
+        formData.append('experienceLevel', experienceLvl);
+        if (experienceLvl === 'Fresher') {
+            formData.append('experience', 'Fresher');
+        }
 
         try {
             const resumeFile = formData.get('resume');
@@ -283,7 +289,7 @@ const Career = () => {
                                             </p>
                                         )}
 
-                                        <button onClick={() => { localStorage.setItem('currentJob', JSON.stringify(job)); setShowForm(true); }} style={{
+                                        <button onClick={() => setSelectedJob(job)} style={{
                                             width: '100%',
                                             padding: '12px',
                                             background: '#fff',
@@ -297,7 +303,7 @@ const Career = () => {
                                             alignItems: 'center',
                                             gap: '8px'
                                         }}>
-                                            Apply Now <ArrowRight size={16} />
+                                            View Details <ArrowRight size={16} />
                                         </button>
                                     </div>
                                 ))}
@@ -305,93 +311,253 @@ const Career = () => {
                         </div>
                     )}
 
-                    {/* Enhanced Application Form */}
-                    {showForm && (
-                        <div style={{ width: '100%', maxWidth: '800px', background: 'rgba(255,255,255,0.05)', padding: '40px', borderRadius: '20px', margin: '0 auto', textAlign: 'left', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                                <h3 style={{ margin: 0, fontSize: '1.8rem', color: '#fff' }}>Apply for {JSON.parse(localStorage.getItem('currentJob') || '{}').title}</h3>
-                                <button type="button" onClick={() => setShowForm(false)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '1rem' }}>Cancel</button>
-                            </div>
+                    {/* Job Details Modal */}
+                    <AnimatePresence>
+                        {selectedJob && (
+                            <div style={{
+                                position: 'fixed',
+                                top: 0, left: 0, width: '100%', height: '100%',
+                                background: 'rgba(0,0,0,0.85)',
+                                display: 'flex', justifyContent: 'center', alignItems: 'center',
+                                zIndex: 1000, padding: '20px',
+                                backdropFilter: 'blur(5px)'
+                            }}>
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                    transition={{ duration: 0.3 }}
+                                    style={{
+                                        background: 'rgba(30, 41, 59, 0.95)',
+                                        backdropFilter: 'blur(20px)',
+                                        width: '100%', maxWidth: '750px',
+                                        borderRadius: '24px',
+                                        padding: '40px',
+                                        maxHeight: '90vh',
+                                        overflowY: 'auto',
+                                        position: 'relative',
+                                        textAlign: 'left',
+                                        color: '#fff',
+                                        border: '1px solid rgba(255,255,255,0.15)',
+                                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                                    }}
+                                >
+                                    <button onClick={() => setSelectedJob(null)} style={{
+                                        position: 'absolute', top: '20px', right: '20px',
+                                        background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff',
+                                        width: '36px', height: '36px', borderRadius: '50%',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: '1.2rem', cursor: 'pointer', transition: '0.2s'
+                                    }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                                    >✕</button>
 
+                                    <h2 style={{ margin: '0 0 10px 0', color: '#D4AF37', fontSize: '2rem' }}>{selectedJob.title}</h2>
+                                    <p style={{ margin: '0 0 25px 0', color: '#94a3b8', fontSize: '1.1rem' }}>{selectedJob.location} • {selectedJob.type} • {selectedJob.department}</p>
 
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '30px' }}>
+                                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <div style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '5px' }}>Experience Required</div>
+                                            <div style={{ fontWeight: '600', color: '#fff' }}>{selectedJob.experience || 'Not Specified'}</div>
+                                        </div>
+                                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <div style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '5px' }}>Package / Salary</div>
+                                            <div style={{ fontWeight: '600', color: '#fff' }}>{selectedJob.salaryRange || 'Not Disclosed'}</div>
+                                        </div>
+                                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)', gridColumn: '1 / -1' }}>
+                                            <div style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '5px' }}>Education Qualification</div>
+                                            <div style={{ fontWeight: '600', color: '#fff' }}>{selectedJob.education || 'Relevant Degree / Experience'}</div>
+                                        </div>
+                                    </div>
 
+                                    <div style={{ marginBottom: '25px', padding: '20px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
+                                        <h3 style={{ color: '#fff', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{ color: '#D4AF37' }}>■</span> Job Description
+                                        </h3>
+                                        <p style={{ color: '#cbd5e1', lineHeight: '1.7', whiteSpace: 'pre-wrap', fontSize: '0.95rem' }}>{selectedJob.description}</p>
+                                    </div>
 
-                            <form onSubmit={submitForm} style={{ display: 'grid', gap: '20px' }}>
+                                    {selectedJob.responsibilities && (
+                                        <div style={{ marginBottom: '35px', padding: '20px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
+                                            <h3 style={{ color: '#fff', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span style={{ color: '#D4AF37' }}>■</span> Roles & Responsibilities
+                                            </h3>
+                                            <p style={{ color: '#cbd5e1', lineHeight: '1.7', whiteSpace: 'pre-wrap', fontSize: '0.95rem' }}>{selectedJob.responsibilities}</p>
+                                        </div>
+                                    )}
 
-
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                    <input name="name" type="text" placeholder="Full Name *" required style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
-                                    <input name="email" type="email" placeholder="Email Address *" required style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                    <input name="phone" type="text" placeholder="Phone Number *" required style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
-                                    <input name="experience" type="number" placeholder="Years of Experience *" required style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                    <input name="linkedin" type="text" placeholder="LinkedIn Profile URL" style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
-                                    <input name="portfolio" type="text" placeholder="Portfolio/GitHub URL" style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
-                                </div>
-
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '10px', color: '#D4AF37', fontWeight: '500' }}>Screening Question: Describe a time you solved a complex technical problem.</label>
-                                    <textarea name="screening" placeholder="Tell us about the problem, your approach, and the outcome..." required style={{ width: '100%', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', minHeight: '120px' }}></textarea>
-                                </div>
-
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '10px', color: '#fff' }}>Upload Resume *</label>
-                                    <input
-                                        type="file"
-                                        name="resume"
-                                        id="resume-upload"
-                                        style={{ display: 'none' }}
-
-                                        onChange={(e) => {
-                                            const fileName = e.target.files[0]?.name;
-                                            if (fileName) {
-                                                document.getElementById('file-label').textContent = fileName;
-                                            }
-                                        }}
-                                    />
-                                    <div
-                                        onClick={() => document.getElementById('resume-upload').click()}
-                                        style={{ border: '2px dashed rgba(255,255,255,0.2)', borderRadius: '8px', padding: '30px', textAlign: 'center', color: '#94a3b8', cursor: 'pointer' }}
+                                    <button onClick={() => {
+                                        localStorage.setItem('currentJob', JSON.stringify(selectedJob));
+                                        setSelectedJob(null);
+                                        setShowForm(true);
+                                        window.scrollTo(0, 500);
+                                    }} style={{
+                                        width: '100%', padding: '16px',
+                                        background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)',
+                                        color: '#000', border: 'none', borderRadius: '10px',
+                                        fontWeight: '800', fontSize: '1.1rem', cursor: 'pointer',
+                                        boxShadow: '0 10px 20px -10px rgba(212, 175, 55, 0.5)',
+                                        transition: 'transform 0.2s'
+                                    }}
+                                        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                                     >
-                                        <span id="file-label">Drag & drop your resume here or <span style={{ color: '#D4AF37' }}>browse</span></span>
+                                        Apply for this Position
+                                    </button>
+                                </motion.div>
+                            </div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Enhanced Application Form Modal */}
+                    <AnimatePresence>
+                        {showForm && (
+                            <div style={{
+                                position: 'fixed',
+                                top: 0, left: 0, width: '100%', height: '100%',
+                                background: 'rgba(0,0,0,0.85)',
+                                display: 'flex', justifyContent: 'center', alignItems: 'center',
+                                zIndex: 1000, padding: '20px',
+                                backdropFilter: 'blur(5px)'
+                            }}>
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                    transition={{ duration: 0.3 }}
+                                    style={{
+                                        background: 'rgba(30, 41, 59, 0.95)',
+                                        backdropFilter: 'blur(20px)',
+                                        width: '100%', maxWidth: '750px',
+                                        borderRadius: '24px',
+                                        padding: '40px',
+                                        maxHeight: '90vh',
+                                        overflowY: 'auto',
+                                        position: 'relative',
+                                        textAlign: 'left',
+                                        color: '#fff',
+                                        border: '1px solid rgba(255,255,255,0.15)',
+                                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                                    }}
+                                >
+                                    <button type="button" onClick={() => setShowForm(false)} style={{
+                                        position: 'absolute', top: '20px', right: '20px',
+                                        background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff',
+                                        width: '36px', height: '36px', borderRadius: '50%',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: '1.2rem', cursor: 'pointer', transition: '0.2s'
+                                    }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                                    ><X size={20} /></button>
+
+                                    <div style={{ marginBottom: '30px' }}>
+                                        <h3 style={{ margin: '0 0 10px 0', fontSize: '2rem', color: '#fff' }}>Apply for {JSON.parse(localStorage.getItem('currentJob') || '{}').title}</h3>
+                                        <p style={{ color: '#94a3b8', margin: 0 }}>Join our team and help us build the future.</p>
                                     </div>
-                                </div>
 
-                                {status === "SUCCESS" && (
-                                    <div style={{ padding: '15px', background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', borderRadius: '12px', border: '1px solid #22c55e', textAlign: 'center', marginBottom: '15px' }}>
-                                        <div style={{ fontWeight: '800', fontSize: '1.2rem', marginBottom: '4px' }}>✓ Application Submitted Successfully!</div>
-                                        <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Our talent team will review your profile shortly.</div>
-                                    </div>
-                                )}
-                                {status === "ERROR" && (
-                                    <div style={{ padding: '15px', background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', borderRadius: '12px', border: '1px solid #ef4444', textAlign: 'center', marginBottom: '15px' }}>
-                                        <div style={{ fontWeight: '800', fontSize: '1.2rem', marginBottom: '4px' }}>✕ Submission Failed</div>
-                                        <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Please check your connection and try again.</div>
-                                    </div>
-                                )}
+                                    <form onSubmit={submitForm} style={{ display: 'grid', gap: '20px' }}>
 
-                                <button type="submit" disabled={status === "SUCCESS" || status === "SUBMITTING"} style={{
 
-                                    marginTop: '20px',
-                                    padding: '15px',
-                                    background: (status === "SUCCESS" || status === "SUBMITTING") ? '#1e293b' : 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)',
-                                    color: (status === "SUCCESS" || status === "SUBMITTING") ? '#94a3b8' : '#000',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    fontWeight: 'bold',
-                                    fontSize: '1.1rem',
-                                    cursor: (status === "SUCCESS" || status === "SUBMITTING") ? 'default' : 'pointer',
-                                    opacity: (status === "SUCCESS" || status === "SUBMITTING") ? 0.7 : 1
-                                }}>
-                                    {status === "SUCCESS" ? "Application Received" : status === "SUBMITTING" ? "Submitting..." : "Submit Application"}
-                                </button>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                            <input name="name" type="text" placeholder="Full Name *" required style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                                            <input name="email" type="email" placeholder="Email Address *" required style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                            <input name="phone" type="text" placeholder="Phone Number *" required style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                                            <div style={{ position: 'relative' }}>
+                                                <select
+                                                    value={experienceLvl}
+                                                    onChange={(e) => setExperienceLvl(e.target.value)}
+                                                    style={{ width: '100%', padding: '15px', paddingRight: '40px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#fff', outline: 'none', appearance: 'none' }}
+                                                    required
+                                                >
+                                                    <option value="Fresher" style={{ background: '#1e293b', color: '#fff' }}>Fresher</option>
+                                                    <option value="Experienced" style={{ background: '#1e293b', color: '#fff' }}>Experienced</option>
+                                                </select>
+                                                <ChevronDown size={18} color="#94a3b8" style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
+                                            <input name="education" type="text" placeholder="Education Details *" required style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                                        </div>
 
-                            </form>
-                        </div>
-                    )}
+                                        {experienceLvl === 'Experienced' && (
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px' }}>
+                                                <input name="experience" type="number" placeholder="Years of Experience *" required style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                                                <input name="currentCompany" type="text" placeholder="Current Company" style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                                                <input name="noticePeriod" type="number" placeholder="Notice Period (Days)" style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                                            </div>
+                                        )}
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                            <input name="linkedin" type="text" placeholder="LinkedIn Profile URL" style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                                            <input name="portfolio" type="text" placeholder="Portfolio/GitHub URL" style={{ padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                                        </div>
+
+                                        <div>
+                                            <label style={{ display: 'block', marginBottom: '10px', color: '#D4AF37', fontWeight: '500' }}>Screening Question: Describe a time you solved a complex technical problem.</label>
+                                            <textarea name="screening" placeholder="Tell us about the problem, your approach, and the outcome..." required style={{ width: '100%', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', minHeight: '120px' }}></textarea>
+                                        </div>
+
+                                        <div>
+                                            <label style={{ display: 'block', marginBottom: '10px', color: '#fff' }}>Upload Resume *</label>
+                                            <input
+                                                type="file"
+                                                name="resume"
+                                                id="resume-upload"
+                                                style={{ display: 'none' }}
+
+                                                onChange={(e) => {
+                                                    const fileName = e.target.files[0]?.name;
+                                                    if (fileName) {
+                                                        document.getElementById('file-label').textContent = fileName;
+                                                    }
+                                                }}
+                                            />
+                                            <div
+                                                onClick={() => document.getElementById('resume-upload').click()}
+                                                style={{ border: '2px dashed rgba(255,255,255,0.2)', borderRadius: '8px', padding: '30px', textAlign: 'center', color: '#94a3b8', cursor: 'pointer' }}
+                                            >
+                                                <span id="file-label">Drag & drop your resume here or <span style={{ color: '#D4AF37' }}>browse</span></span>
+                                            </div>
+                                        </div>
+
+                                        {status === "SUCCESS" && (
+                                            <div style={{ padding: '15px', background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', borderRadius: '12px', border: '1px solid #22c55e', textAlign: 'center', marginBottom: '15px' }}>
+                                                <div style={{ fontWeight: '800', fontSize: '1.2rem', marginBottom: '4px' }}>✓ Application Submitted Successfully!</div>
+                                                <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Our talent team will review your profile shortly.</div>
+                                            </div>
+                                        )}
+                                        {status === "ERROR" && (
+                                            <div style={{ padding: '15px', background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', borderRadius: '12px', border: '1px solid #ef4444', textAlign: 'center', marginBottom: '15px' }}>
+                                                <div style={{ fontWeight: '800', fontSize: '1.2rem', marginBottom: '4px' }}>✕ Submission Failed</div>
+                                                <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Please check your connection and try again.</div>
+                                            </div>
+                                        )}
+
+                                        <button type="submit" disabled={status === "SUCCESS" || status === "SUBMITTING"} style={{
+
+                                            marginTop: '20px',
+                                            padding: '15px',
+                                            background: (status === "SUCCESS" || status === "SUBMITTING") ? '#1e293b' : 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)',
+                                            color: (status === "SUCCESS" || status === "SUBMITTING") ? '#94a3b8' : '#000',
+                                            border: 'none',
+                                            borderRadius: '8px',
+                                            fontWeight: 'bold',
+                                            fontSize: '1.1rem',
+                                            cursor: (status === "SUCCESS" || status === "SUBMITTING") ? 'default' : 'pointer',
+                                            opacity: (status === "SUCCESS" || status === "SUBMITTING") ? 0.7 : 1
+                                        }}>
+                                            {status === "SUCCESS" ? "Application Received" : status === "SUBMITTING" ? "Submitting..." : "Submit Application"}
+                                        </button>
+
+                                    </form>
+                                </motion.div>
+                            </div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div >
         </section >

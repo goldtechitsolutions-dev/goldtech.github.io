@@ -5,6 +5,25 @@ import { Link } from 'react-router-dom';
 import { countryCodes } from '../utils/countryData';
 import { useRef, useEffect } from 'react';
 import AdminService from '../services/adminService';
+import companyLogo from '../assets/logo-transparent.png';
+
+const companyRoles = [
+    "Frontend Developer",
+    "Backend Developer",
+    "Full Stack Engineer",
+    "UI/UX Designer",
+    "Product Manager",
+    "QA Engineer",
+    "DevOps Engineer",
+    "Data Scientist",
+    "Mobile App Developer",
+    "Cloud Architect",
+    "Business Analyst",
+    "Cybersecurity Specialist",
+    "Sales",
+    "Marketing",
+    "HR / Recruitment"
+];
 
 
 const CandidatePortal = () => {
@@ -21,8 +40,13 @@ const CandidatePortal = () => {
         name: '',
         countryCode: '+91',
         phone: '',
+        experienceLevel: 'Fresher',
         experience: '',
+        currentCompany: '',
+        noticePeriod: '',
+        education: '',
         jobLookingFor: '',
+        customJob: '',
         linkedin: '',
         portfolio: ''
     });
@@ -86,8 +110,19 @@ const CandidatePortal = () => {
             signupFormData.append('name', formData.name);
             signupFormData.append('email', email);
             signupFormData.append('phone', `${formData.countryCode}${formData.phone}`);
-            signupFormData.append('experience', formData.experience);
-            signupFormData.append('role', formData.jobLookingFor);
+
+            signupFormData.append('experienceLevel', formData.experienceLevel);
+            if (formData.experienceLevel === 'Experienced') {
+                signupFormData.append('experience', formData.experience);
+                signupFormData.append('currentCompany', formData.currentCompany);
+                signupFormData.append('noticePeriod', formData.noticePeriod);
+            } else {
+                signupFormData.append('experience', 'Fresher');
+            }
+
+            const finalRole = formData.jobLookingFor === 'Others' ? formData.customJob : formData.jobLookingFor;
+            signupFormData.append('role', finalRole);
+            signupFormData.append('education', formData.education);
             signupFormData.append('linkedin', formData.linkedin);
             signupFormData.append('portfolio', formData.portfolio);
             signupFormData.append('source', 'Candidate Portal');
@@ -116,14 +151,19 @@ const CandidatePortal = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: '#0f172a',
+                background: `url(${companyLogo}) center center / 50% no-repeat, #0f172a`,
                 fontFamily: "'Outfit', sans-serif",
-                padding: '40px 20px'
+                padding: '40px 20px',
+                position: 'relative'
             }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(15, 23, 42, 0.90)', zIndex: 1 }}></div>
+
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
+                        position: 'relative',
+                        zIndex: 2,
                         background: 'rgba(255, 255, 255, 0.05)',
                         backdropFilter: 'blur(10px)',
                         padding: '40px',
@@ -131,13 +171,17 @@ const CandidatePortal = () => {
                         border: '1px solid rgba(255, 255, 255, 0.1)',
                         width: '100%',
                         maxWidth: authMode === 'signup' ? '600px' : '400px',
-                        color: '#fff'
+                        color: '#fff',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
                     }}
                 >
-                    <h2 style={{ textAlign: 'center', marginBottom: '10px' }}>{authMode === 'signup' ? 'Create Your Profile' : 'Welcome Back'}</h2>
-                    <p style={{ textAlign: 'center', color: '#94a3b8', marginBottom: '30px' }}>
-                        {authMode === 'signup' ? 'Join GoldTech and track your career journey' : 'Access your profile to track applications'}
-                    </p>
+                    <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                        <img src={companyLogo} alt="GoldTech IT Solutions" style={{ height: '60px', marginBottom: '15px', filter: 'drop-shadow(0 0 10px rgba(212,175,55,0.3))' }} />
+                        <h2 style={{ margin: '0 0 10px 0', fontSize: '1.8rem' }}>{authMode === 'signup' ? 'Create Your Profile' : 'Welcome Back'}</h2>
+                        <p style={{ color: '#94a3b8', margin: 0 }}>
+                            {authMode === 'signup' ? 'Join GoldTech and track your career journey' : 'Access your profile to track applications'}
+                        </p>
+                    </div>
 
                     <form onSubmit={authMode === 'signup' ? handleSignup : handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         {authMode === 'signup' && (
@@ -307,6 +351,68 @@ const CandidatePortal = () => {
                         {authMode === 'signup' && (
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                                 <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Job Looking For *</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <select
+                                            value={formData.jobLookingFor}
+                                            onChange={(e) => setFormData({ ...formData, jobLookingFor: e.target.value })}
+                                            style={{ width: '100%', padding: '12px', paddingRight: '40px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#fff', outline: 'none', appearance: 'none' }}
+                                            required
+                                        >
+                                            <option value="" disabled style={{ background: '#1e293b', color: '#fff' }}>Select a Role</option>
+                                            {companyRoles.map((role, idx) => (
+                                                <option key={idx} value={role} style={{ background: '#1e293b', color: '#fff' }}>{role}</option>
+                                            ))}
+                                            <option value="Others" style={{ background: '#1e293b', color: '#fff' }}>Others</option>
+                                        </select>
+                                        <ChevronDown size={18} color="#94a3b8" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                                    </div>
+                                </div>
+                                {formData.jobLookingFor === 'Others' && (
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Specify Role *</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. UI/UX Designer"
+                                            value={formData.customJob}
+                                            onChange={(e) => setFormData({ ...formData, customJob: e.target.value })}
+                                            style={{ width: '100%', padding: '12px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#fff', outline: 'none' }}
+                                            required={formData.jobLookingFor === 'Others'}
+                                        />
+                                    </div>
+                                )}
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Experience Level *</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <select
+                                            value={formData.experienceLevel}
+                                            onChange={(e) => setFormData({ ...formData, experienceLevel: e.target.value, experience: '', currentCompany: '', noticePeriod: '' })}
+                                            style={{ width: '100%', padding: '12px', paddingRight: '40px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#fff', outline: 'none', appearance: 'none' }}
+                                            required
+                                        >
+                                            <option value="Fresher" style={{ background: '#1e293b', color: '#fff' }}>Fresher</option>
+                                            <option value="Experienced" style={{ background: '#1e293b', color: '#fff' }}>Experienced</option>
+                                        </select>
+                                        <ChevronDown size={18} color="#94a3b8" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                                    </div>
+                                </div>
+                                <div style={{ gridColumn: formData.jobLookingFor === 'Others' ? '1 / -1' : 'auto' }}>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Education Details *</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. B.Tech in CS"
+                                        value={formData.education}
+                                        onChange={(e) => setFormData({ ...formData, education: e.target.value })}
+                                        style={{ width: '100%', padding: '12px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#fff', outline: 'none' }}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {authMode === 'signup' && formData.experienceLevel === 'Experienced' && (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px' }}>
+                                <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Years of Experience *</label>
                                     <input
                                         type="number"
@@ -318,14 +424,23 @@ const CandidatePortal = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Job Looking For *</label>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Current Company</label>
                                     <input
                                         type="text"
-                                        placeholder="e.g. Frontend Developer"
-                                        value={formData.jobLookingFor}
-                                        onChange={(e) => setFormData({ ...formData, jobLookingFor: e.target.value })}
+                                        placeholder="e.g. TechCorp"
+                                        value={formData.currentCompany}
+                                        onChange={(e) => setFormData({ ...formData, currentCompany: e.target.value })}
                                         style={{ width: '100%', padding: '12px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#fff', outline: 'none' }}
-                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Notice Period (Days)</label>
+                                    <input
+                                        type="number"
+                                        placeholder="e.g. 30"
+                                        value={formData.noticePeriod}
+                                        onChange={(e) => setFormData({ ...formData, noticePeriod: e.target.value })}
+                                        style={{ width: '100%', padding: '12px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#fff', outline: 'none' }}
                                     />
                                 </div>
                             </div>

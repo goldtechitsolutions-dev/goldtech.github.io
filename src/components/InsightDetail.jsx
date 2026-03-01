@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, User, Calendar, Tag } from 'lucide-react';
+import DOMPurify from 'dompurify';
 
 const insightData = {
     "the-future-of-ai-in-banking": {
@@ -108,7 +109,7 @@ const InsightDetail = () => {
                 >
                     <div
                         className="content-body"
-                        dangerouslySetInnerHTML={{ __html: insight.content }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(insight.content) }}
                         style={{ lineHeight: '1.8', fontSize: '1.1rem', color: '#334155' }}
                     />
                 </motion.div>

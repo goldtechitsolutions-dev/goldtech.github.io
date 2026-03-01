@@ -10,7 +10,6 @@ import p2Video from '../assets/InShot_p2.mp4';
 import p3Video from '../assets/InShot_P3.mp4';
 import p4Video from '../assets/GT6.mp4';
 
-import posterImage from '../assets/about-main.jpg';
 import heroPoster from '../assets/hero-poster.jpg';
 import fallbackImage from '../assets/modern-office.png';
 
@@ -88,7 +87,9 @@ const HeroVideo = () => {
                 if (index === current) {
                     vid.currentTime = 0;
                     vid.playbackRate = 0.5; // Ensure slow speed is maintained
-                    vid.play().catch(e => console.error("Video play failed:", e));
+                    vid.play().catch(e => {
+                        if (e.name !== 'AbortError') console.warn("Video play failed:", e);
+                    });
                 } else {
                     vid.pause();
                 }
@@ -127,7 +128,7 @@ const HeroVideo = () => {
                     >
                         <video
                             src={slide.videoSrc}
-                            poster={slide.poster || posterImage}
+                            poster={slide.poster || heroPoster}
                             preload="metadata"
                             // autoPlay removed to prevent all videos playing at once
                             loop={index !== videoSlides.length - 1} // Loop all except the last one

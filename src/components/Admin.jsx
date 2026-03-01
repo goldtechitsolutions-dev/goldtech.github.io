@@ -60,6 +60,7 @@ const Admin = ({ currentUser }) => {
     const [candidates, setCandidates] = useState([]);
     const [jobs, setJobs] = useState([]);
     const [companyInfo, setCompanyInfo] = useState({ address: '', email: '', phone: '', footerOpacity: 0.5 });
+    const [isEditingCompanyInfo, setIsEditingCompanyInfo] = useState(false);
 
     // Selection & UI State
     const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -234,6 +235,13 @@ const Admin = ({ currentUser }) => {
         };
     }, [isLoggedIn]);
 
+    // Auto-refresh when switching to data-sensitive tabs
+    useEffect(() => {
+        if (isLoggedIn && (activeTab === 'chatbot' || activeTab === 'overview')) {
+            refreshData();
+        }
+    }, [activeTab, isLoggedIn]);
+
     const refreshData = async () => {
         if (isRefreshing) return;
         setIsRefreshing(true);
@@ -242,7 +250,7 @@ const Admin = ({ currentUser }) => {
             const [
                 apps, qs, meets, usrs, rls, jbs,
                 health, services, logs, infra, cLogs, keys, jit, audits, creds, sec,
-                metrics, proj, fin, info, fetchedClients, history
+                metrics, proj, fin, info, fetchedClients, history, cLogs_fetched, cStats_fetched
             ] = await Promise.all([
                 AdminService.getApplications(),
                 AdminService.getQueries(),
@@ -265,7 +273,9 @@ const Admin = ({ currentUser }) => {
                 AdminService.getFinancialStats(),
                 AdminService.getCompanyInfo(),
                 AdminService.getClients(),
-                AdminService.getPasswordResetHistory()
+                AdminService.getPasswordResetHistory(),
+                AdminService.getChatLogs(),
+                AdminService.getChatStats()
             ]);
 
             setApplications(apps || []);
@@ -291,6 +301,8 @@ const Admin = ({ currentUser }) => {
             setCompanyInfo(info);
             setClients(fetchedClients || []);
             setResetHistory(history || []);
+            setChatLogs(cLogs_fetched || []);
+            setChatStats(cStats_fetched || null);
 
             setStats([
                 { title: 'Total Visits', value: '12,450', change: '+12%', icon: <Users size={24} color="#004687" /> },
@@ -301,7 +313,8 @@ const Admin = ({ currentUser }) => {
             ]);
         } catch (error) {
             console.error("Admin.jsx: Error refreshing data", error);
-            // alert("Error refreshing data. Check console for details.");
+            // Optionally set an error state to show in UI
+            // setGlobalError("Failed to refresh data. Some information may be outdated.");
         } finally {
             setIsRefreshing(false);
         }
@@ -648,6 +661,7 @@ const Admin = ({ currentUser }) => {
         e.preventDefault();
         await AdminService.updateCompanyInfo(companyInfo);
         alert('Company Profile Settings Updated Successfully');
+        setIsEditingCompanyInfo(false);
         await refreshData();
     };
 
@@ -907,7 +921,7 @@ const Admin = ({ currentUser }) => {
                     <button onClick={() => setActiveTab('access-management')} style={navLinkStyle(activeTab === 'access-management')}><ShieldCheck size={18} /> Access Management</button>
 
                     <div style={{ padding: '20px 15px 10px', fontSize: '0.7rem', fontWeight: '700', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '2px' }}>Intel & Audit</div>
-                    <button onClick={() => setActiveTab('chat-analytics')} style={navLinkStyle(activeTab === 'chat-analytics')}>
+                    <button onClick={() => setActiveTab('chatbot')} style={navLinkStyle(activeTab === 'chatbot')}>
                         <MessageSquare size={18} /> Conversational Logs
                     </button>
                     <button onClick={() => setActiveTab('audit')} style={navLinkStyle(activeTab === 'audit')}>
@@ -970,7 +984,7 @@ const Admin = ({ currentUser }) => {
                             {activeTab === 'vault' && 'Password Vault'}
                             {activeTab === 'billing' && 'Payroll & Finance'}
                             {activeTab === 'revenue' && 'Revenue Vectors'}
-                            {activeTab === 'chat-analytics' && 'Conversational Intelligence'}
+                            {activeTab === 'chatbot' && 'Conversational Intelligence'}
 
                             {activeTab === 'audit' && 'Immutable Logs'}
                             {activeTab === 'access-management' && 'Privileged Access Management'}
@@ -1775,6 +1789,29 @@ const Admin = ({ currentUser }) => {
                 {
                     activeTab === 'meetings' && (
                         <div style={cardStyle}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <h3 style={{ margin: 0, color: '#fff' }}>Scheduled Meetings</h3>
+                                <button
+                                    onClick={refreshData}
+                                    disabled={isRefreshing}
+                                    style={{
+                                        background: 'rgba(212, 175, 55, 0.1)',
+                                        border: '1px solid rgba(212, 175, 55, 0.3)',
+                                        color: '#D4AF37',
+                                        padding: '8px 16px',
+                                        borderRadius: '8px',
+                                        cursor: isRefreshing ? 'not-allowed' : 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        fontSize: '0.8rem',
+                                        fontWeight: '700'
+                                    }}
+                                >
+                                    <RefreshCw size={14} className={isRefreshing ? "spin-icon" : ""} style={isRefreshing ? { animation: 'spin 1s linear infinite' } : {}} />
+                                    {isRefreshing ? 'REFRESHING...' : 'REFRESH DATA'}
+                                </button>
+                            </div>
                             <div style={{ overflowX: 'auto', paddingBottom: '10px' }} className="custom-scrollbar">
                                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                     <thead>
@@ -2720,7 +2757,7 @@ const Admin = ({ currentUser }) => {
                                                 ))
                                             ) : (
                                                 <tr>
-                                                    <td colSpan="5" style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+                                                    <td colSpan="7" style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
                                                         No chat logs found.
                                                     </td>
                                                 </tr>
@@ -3389,31 +3426,6 @@ const Admin = ({ currentUser }) => {
                                                     </div>
                                                 )}
 
-                                                {selectedItem && (
-                                                    <div style={{ marginTop: '10px' }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                                            <label style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Reset Password (Optional)</label>
-                                                            <button
-                                                                type="button"
-                                                                onClick={async () => {
-                                                                    const strongPass = await AdminService.generateSecurePassword();
-                                                                    setFormData({ ...formData, newPassword: strongPass });
-                                                                }}
-                                                                style={{ background: 'none', border: 'none', color: '#D4AF37', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
-                                                            >
-                                                                <RefreshCw size={12} /> Suggest Strong Key
-                                                            </button>
-                                                        </div>
-                                                        <input
-                                                            type="text"
-                                                            value={formData.newPassword || ''}
-                                                            onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-                                                            placeholder="Leave blank to keep current password"
-                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
-                                                        />
-                                                    </div>
-                                                )}
-
                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                                                     <div>
                                                         <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Access Role</label>
@@ -3707,7 +3719,7 @@ const Admin = ({ currentUser }) => {
                                                                 </button>
                                                             </div>
 
-                                                            {selectedItem?.message?.includes('[SECURITY]') && (
+                                                            {modalType === 'query' && selectedItem?.message?.includes('[SECURITY]') && (
                                                                 <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                                                     {selectedItem.status !== 'New' && (
                                                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
@@ -3854,6 +3866,17 @@ const Admin = ({ currentUser }) => {
                                                     placeholder="e.g., 5+ Years"
                                                     value={formData.experience}
                                                     onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+                                                    style={inputStyle}
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label style={{ color: '#94a3b8', fontSize: '0.75rem', display: 'block', marginBottom: '5px', fontWeight: '700' }}>Package / Salary</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="e.g., Not Disclosed"
+                                                    value={formData.salaryRange || ''}
+                                                    onChange={(e) => setFormData({ ...formData, salaryRange: e.target.value })}
                                                     style={inputStyle}
                                                     required
                                                 />
@@ -4035,8 +4058,8 @@ const Admin = ({ currentUser }) => {
                                         </div>
                                     )}
                                 </div>
-                            </motion.div>
-                        </div>
+                            </motion.div >
+                        </div >
                     )
                 }
 
@@ -4227,103 +4250,154 @@ const Admin = ({ currentUser }) => {
                                     </div>
                                 </div>
 
-                                <form onSubmit={handleCompanyInfoSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                        <div style={{ gridColumn: 'span 2' }}>
-                                            <label style={{ display: 'block', marginBottom: '10px', fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Headquarters Address</label>
-                                            <div style={{ position: 'relative' }}>
-                                                <Building size={18} style={{ position: 'absolute', left: '15px', top: '15px', color: '#64748b' }} />
-                                                <textarea
-                                                    value={companyInfo.address}
-                                                    onChange={(e) => setCompanyInfo({ ...companyInfo, address: e.target.value })}
-                                                    style={{
-                                                        width: '100%', padding: '15px 15px 15px 45px', borderRadius: '12px',
-                                                        background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                        color: '#fff', fontSize: '1rem', outline: 'none', transition: 'all 0.3s',
-                                                        minHeight: '100px', resize: 'vertical'
-                                                    }}
-                                                    placeholder="Enter company address"
-                                                />
+                                {isEditingCompanyInfo ? (
+                                    <form onSubmit={handleCompanyInfoSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                            <div style={{ gridColumn: 'span 2' }}>
+                                                <label style={{ display: 'block', marginBottom: '10px', fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Headquarters Address</label>
+                                                <div style={{ position: 'relative' }}>
+                                                    <Building size={18} style={{ position: 'absolute', left: '15px', top: '15px', color: '#64748b' }} />
+                                                    <textarea
+                                                        value={companyInfo.address}
+                                                        onChange={(e) => setCompanyInfo({ ...companyInfo, address: e.target.value })}
+                                                        style={{
+                                                            width: '100%', padding: '15px 15px 15px 45px', borderRadius: '12px',
+                                                            background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                            color: '#fff', fontSize: '1rem', outline: 'none', transition: 'all 0.3s',
+                                                            minHeight: '100px', resize: 'vertical'
+                                                        }}
+                                                        placeholder="Enter company address"
+                                                    />
+                                                </div>
                                             </div>
-                                        </div>
 
-                                        <div>
-                                            <label style={{ display: 'block', marginBottom: '10px', fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Global Email</label>
-                                            <div style={{ position: 'relative' }}>
-                                                <Mail size={18} style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                                            <div>
+                                                <label style={{ display: 'block', marginBottom: '10px', fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Global Email</label>
+                                                <div style={{ position: 'relative' }}>
+                                                    <Mail size={18} style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                                                    <input
+                                                        type="email"
+                                                        value={companyInfo.email}
+                                                        onChange={(e) => setCompanyInfo({ ...companyInfo, email: e.target.value })}
+                                                        style={{
+                                                            width: '100%', padding: '15px 15px 15px 45px', borderRadius: '12px',
+                                                            background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                            color: '#fff', fontSize: '1rem', outline: 'none', transition: 'all 0.3s'
+                                                        }}
+                                                        placeholder="company@example.com"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label style={{ display: 'block', marginBottom: '10px', fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Secure Hotlink (Phone)</label>
+                                                <div style={{ position: 'relative' }}>
+                                                    <Phone size={18} style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                                                    <input
+                                                        type="text"
+                                                        value={companyInfo.phone}
+                                                        onChange={(e) => setCompanyInfo({ ...companyInfo, phone: e.target.value })}
+                                                        style={{
+                                                            width: '100%', padding: '15px 15px 15px 45px', borderRadius: '12px',
+                                                            background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                            color: '#fff', fontSize: '1rem', outline: 'none', transition: 'all 0.3s'
+                                                        }}
+                                                        placeholder="+1 234 567 890"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div style={{ gridColumn: 'span 2', marginTop: '10px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                                    <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Footer Location Opacity</label>
+                                                    <span style={{ color: '#D4AF37', fontWeight: '800', fontSize: '0.9rem' }}>{Math.round(companyInfo.footerOpacity * 100)}%</span>
+                                                </div>
                                                 <input
-                                                    type="email"
-                                                    value={companyInfo.email}
-                                                    onChange={(e) => setCompanyInfo({ ...companyInfo, email: e.target.value })}
+                                                    type="range"
+                                                    min="0"
+                                                    max="1"
+                                                    step="0.1"
+                                                    value={companyInfo.footerOpacity}
+                                                    onChange={(e) => setCompanyInfo({ ...companyInfo, footerOpacity: parseFloat(e.target.value) })}
                                                     style={{
-                                                        width: '100%', padding: '15px 15px 15px 45px', borderRadius: '12px',
-                                                        background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                        color: '#fff', fontSize: '1rem', outline: 'none', transition: 'all 0.3s'
+                                                        width: '100%',
+                                                        height: '6px',
+                                                        background: 'rgba(255, 255, 255, 0.1)',
+                                                        borderRadius: '5px',
+                                                        appearance: 'none',
+                                                        outline: 'none',
+                                                        cursor: 'pointer'
                                                     }}
-                                                    placeholder="company@example.com"
                                                 />
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px' }}>
+                                                    <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Transparent</span>
+                                                    <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Opaque</span>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div>
-                                            <label style={{ display: 'block', marginBottom: '10px', fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Secure Hotlink (Phone)</label>
-                                            <div style={{ position: 'relative' }}>
-                                                <Phone size={18} style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-                                                <input
-                                                    type="text"
-                                                    value={companyInfo.phone}
-                                                    onChange={(e) => setCompanyInfo({ ...companyInfo, phone: e.target.value })}
-                                                    style={{
-                                                        width: '100%', padding: '15px 15px 15px 45px', borderRadius: '12px',
-                                                        background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                        color: '#fff', fontSize: '1rem', outline: 'none', transition: 'all 0.3s'
-                                                    }}
-                                                    placeholder="+1 234 567 890"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div style={{ gridColumn: 'span 2', marginTop: '10px' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                                                <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Footer Location Opacity</label>
-                                                <span style={{ color: '#D4AF37', fontWeight: '800', fontSize: '0.9rem' }}>{Math.round(companyInfo.footerOpacity * 100)}%</span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="1"
-                                                step="0.1"
-                                                value={companyInfo.footerOpacity}
-                                                onChange={(e) => setCompanyInfo({ ...companyInfo, footerOpacity: parseFloat(e.target.value) })}
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px', marginTop: '10px' }}>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsEditingCompanyInfo(false)}
                                                 style={{
-                                                    width: '100%',
-                                                    height: '6px',
-                                                    background: 'rgba(255, 255, 255, 0.1)',
-                                                    borderRadius: '5px',
-                                                    appearance: 'none',
-                                                    outline: 'none',
-                                                    cursor: 'pointer'
+                                                    background: 'transparent', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)',
+                                                    padding: '12px 25px', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.3s',
+                                                    fontWeight: '600'
                                                 }}
-                                            />
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px' }}>
-                                                <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Transparent</span>
-                                                <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Opaque</span>
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button type="submit" style={{
+                                                background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                                                color: '#000', border: 'none', padding: '14px 40px', fontSize: '0.9rem',
+                                                fontWeight: '800', borderRadius: '12px', cursor: 'pointer',
+                                                transition: 'all 0.3s', boxShadow: '0 10px 20px -5px rgba(212, 175, 55, 0.3)',
+                                                textTransform: 'uppercase', letterSpacing: '1px'
+                                            }}>
+                                                Save Settings
+                                            </button>
+                                        </div>
+                                    </form>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                            <div style={{ gridColumn: 'span 2', background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <h4 style={{ color: '#94a3b8', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <Building size={16} /> Headquarters Address
+                                                </h4>
+                                                <p style={{ color: '#fff', margin: 0, whiteSpace: 'pre-wrap' }}>{companyInfo.address || 'No address configured'}</p>
+                                            </div>
+
+                                            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <h4 style={{ color: '#94a3b8', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <Mail size={16} /> Global Email
+                                                </h4>
+                                                <p style={{ color: '#fff', margin: 0 }}>{companyInfo.email || 'No email configured'}</p>
+                                            </div>
+
+                                            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <h4 style={{ color: '#94a3b8', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <Phone size={16} /> Secure Hotlink
+                                                </h4>
+                                                <p style={{ color: '#fff', margin: 0 }}>{companyInfo.phone || 'No phone configured'}</p>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-                                        <button type="submit" style={{
-                                            background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
-                                            color: '#000', border: 'none', padding: '14px 40px', fontSize: '0.9rem',
-                                            fontWeight: '800', borderRadius: '12px', cursor: 'pointer',
-                                            transition: 'all 0.3s', boxShadow: '0 10px 20px -5px rgba(212, 175, 55, 0.3)',
-                                            textTransform: 'uppercase', letterSpacing: '1px'
-                                        }}>
-                                            Synchronize Profile
-                                        </button>
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                                            <button
+                                                onClick={() => setIsEditingCompanyInfo(true)}
+                                                style={{
+                                                    background: 'rgba(212, 175, 55, 0.1)',
+                                                    color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.3)', padding: '12px 30px', fontSize: '0.9rem',
+                                                    fontWeight: '800', borderRadius: '12px', cursor: 'pointer',
+                                                    transition: 'all 0.3s', display: 'flex', alignItems: 'center', gap: '8px'
+                                                }}>
+                                                <Edit size={16} /> Edit Profile
+                                            </button>
+                                        </div>
                                     </div>
-                                </form>
+                                )}
                             </div>
 
                             <div style={{ ...cardStyle, marginTop: '20px', background: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.1)' }}>

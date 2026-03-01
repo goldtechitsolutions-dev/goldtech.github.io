@@ -98,8 +98,9 @@ const ChatBot = () => {
             setIsTyping(false);
             const welcomeMsg = {
                 id: Date.now(),
-                text: `Hi ${formData.name}! 👋 I'm SONA. Thanks for sharing your details.`,
-                sender: 'bot'
+                text: `Hi ${formData.name}! 👋 I'm SONA. Thanks for sharing your details. Which of our specialized services can I assist you with today?`,
+                sender: 'bot',
+                options: serviceOptions
             };
             setMessages([welcomeMsg]);
 
@@ -205,11 +206,27 @@ const ChatBot = () => {
         let nextStep = step + 1;
         const normalizedInput = lastInput.trim().toLowerCase();
 
+        // 0. Global Session Termination Check
+        const exitKeywords = ['no', 'nothing', 'nope', 'nah', 'none', 'not now', 'later', 'bye', 'goodbye', 'cancel', 'end', 'stop', 'finish', 'exit'];
+        if (exitKeywords.some(w => normalizedInput === w || (normalizedInput.length < 10 && normalizedInput.includes(w)))) {
+            nextMessage = "Alright! Feel free to reach out whenever you're ready. Have a wonderful day!";
+            nextStep = 5;
+            setStep(nextStep);
+            setIsTyping(true);
+            setTimeout(async () => {
+                setIsTyping(false);
+                const botMsg = { id: Date.now() + 1, text: nextMessage, sender: 'bot' };
+                const updatedMessages = [...currentMessages, botMsg];
+                setMessages(updatedMessages);
+                await saveChatSession(updatedMessages, 'Closed');
+            }, 800);
+            return;
+        }
+
         // Global Knowledge Base Check
         const knowledgeBase = [
             { keys: ['hi', 'hello', 'hey', 'greetings', 'good morning', 'good afternoon', 'good evening', 'sup', 'yo'], answer: "Hello! I'm SONA, your virtual assistant. How can I help you today?" },
             { keys: ['who are you', 'who are u', 'who r u', 'what is this', 'are you a bot', 'are u a bot', 'are you human', 'are u human', 'real person', 'your name', 'ur name'], answer: "I'm SONA, an AI assistant for GoldTech. I'm here to help you explore our services and connect with our experts." },
-            { keys: ['services', 'our services', 'what services', 'what features', 'list services', 'show services', 'what do you do', 'what do u do', 'what u do', 'what you do', 'what do you offer', 'what do u offer', 'what do you provide', 'what do u provide'], answer: "We represent GoldTech IT Solutions. We specialize in:\n• Web & Mobile Applications\n• Salesforce & SAP Solutions\n• AI & Automation\n• Cloud Infrastructure\n• Data Analytics\n• Digital Transformation\n\nWhich of these areas are you interested in?" },
             { keys: ['location', 'address', 'where are you', 'where are u', 'where r u', 'office', 'headquarters', 'based in'], answer: "We are located at:\n📍 T-hub, Hyderabad" },
 
             // Services - Prioritize Specific Intent
@@ -239,7 +256,6 @@ const ChatBot = () => {
             { keys: ['thank', 'thanks', 'thx'], answer: "You're welcome! Is there anything else I can help you with?" },
             { keys: ['bye', 'goodbye', 'see ya', 'cya'], answer: "Goodbye! Have a great day ahead! 👋" }
         ];
-
         const kbMatch = knowledgeBase.find(item => item.keys.some(key => {
             try {
                 const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -249,7 +265,7 @@ const ChatBot = () => {
             }
         }));
 
-        // Special Priority: If we are expecting a service selection, check if input matches a service EXACTLY
+        // 2. Special Priority: If we are expecting a service selection, check if input matches a service EXACTLY
         const exactServiceMatch = serviceOptions.find(opt => opt.name.toLowerCase() === normalizedInput);
 
         if (exactServiceMatch && step === 0) {
@@ -262,20 +278,15 @@ const ChatBot = () => {
                 nextMessage = "I'd be happy to assist you with that. To get started, may I know your full name?";
                 nextStep = 1;
             }
-        } else if (kbMatch) {
+        } else if (kbMatch && step === 0) {
+            // Only prioritize KB at the very beginning to avoid interrupting data collection
             nextMessage = kbMatch.answer;
             nextStep = 0;
         } else {
             switch (step) {
                 case 0: // Handshake / Greeting / Initial Intent
                     {
-                        if (normalizedInput && ['no', 'nothing', 'nope', 'nah', 'none', 'not now', 'later', 'bye', 'goodbye', 'cancel'].some(w => normalizedInput === w || normalizedInput.includes(w))) {
-                            nextMessage = "Alright! Feel free to reach out whenever you're ready. Have a wonderful day!";
-                            nextStep = 5;
-                        } else if (['yes', 'yeah', 'yep', 'sure', 'ok', 'okay'].some(w => normalizedInput === w)) {
-                            nextMessage = "Great! Could you tell me a little more about what you have in mind?";
-                            nextStep = 0;
-                        } else if (normalizedInput.length < 3) {
+                        if (normalizedInput.length < 3) {
                             nextMessage = "I'm sorry, I didn't quite catch that. Could you please clarify what you are looking for?";
                             nextStep = 0;
                         } else {
@@ -353,7 +364,7 @@ const ChatBot = () => {
                 case 7: // Final Requirement Capture
                     {
                         setFormData(prev => ({ ...prev, requirements: lastInput }));
-                        nextMessage = "Thank you so much! I've passed your detailed requirements to our team. An expert will review them and contact you shortly. Have a great day! 👋";
+                        nextMessage = "It's been a pleasure assisting you! I've successfully transferred your requirements to our technical specialized team. One of our experts will reach out to you within 24 hours to discuss the next steps. Thank you for choosing GoldTech IT Solutions. Have a truly wonderful day! ✨";
                         nextStep = 5;
                     }
                     break;
@@ -378,7 +389,12 @@ const ChatBot = () => {
 
             // Save Log if session ended (Lead Captured)
             if (nextStep === 5) {
-                await saveChatSession(updatedMessages, 'New');
+                await saveChatSession(updatedMessages, 'Lead Captured');
+
+                // Auto-close chat window after a delay for better UX
+                setTimeout(() => {
+                    setIsOpen(false);
+                }, 5000);
             }
 
             // Supplemental scroll for staggered chips

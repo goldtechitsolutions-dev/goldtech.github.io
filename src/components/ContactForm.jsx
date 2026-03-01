@@ -13,19 +13,35 @@ const ContactForm = () => {
     const [phoneError, setPhoneError] = useState("");
     const dropdownRef = useRef(null);
 
+    const [companyInfo, setCompanyInfo] = useState({ address: '', email: '', phone: '' });
+
     const filteredCountries = countryCodes.filter(c =>
         (c.name && c.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (c.code && c.code.includes(searchTerm))
     );
 
     useEffect(() => {
+        const fetchInfo = async () => {
+            const data = await AdminService.getCompanyInfo();
+            setCompanyInfo(data);
+        };
+
+        fetchInfo();
+        window.addEventListener('gt_data_update', fetchInfo);
+        window.addEventListener('storage', fetchInfo);
+
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsDropdownOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('gt_data_update', fetchInfo);
+            window.removeEventListener('storage', fetchInfo);
+        };
     }, []);
 
     const submitForm = async (ev) => {
@@ -74,22 +90,9 @@ const ContactForm = () => {
             };
             await AdminService.addQuery(newQuery);
 
-            // Continue with original Formspree submission (optional, keeping for backward compat)
-            const response = await fetch(form.action, {
-                method: form.method,
-                body: data,
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (response.ok || form.action.includes('YOUR_FORM_ID')) {
-                form.reset();
-                setStatus("SUCCESS");
-                setTimeout(() => setStatus(""), 5000);
-            } else {
-                setStatus("ERROR");
-            }
+            form.reset();
+            setStatus("SUCCESS");
+            setTimeout(() => setStatus(""), 5000);
         } catch (error) {
             console.error("Submission error:", error);
             setStatus("ERROR");
@@ -166,8 +169,8 @@ const ContactForm = () => {
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
                             {[
-                                { icon: Mail, label: 'Email Us', text: 'goldtechitsolutions@gmail.com' },
-                                { icon: Phone, label: 'Call Us', text: '+91 9640786029' },
+                                { icon: Mail, label: 'Email Us', text: companyInfo.email || 'goldtechitsolutions@gmail.com' },
+                                { icon: Phone, label: 'Call Us', text: companyInfo.phone || '+91 9640786029' },
                                 { icon: Globe, label: 'Global Presence', text: 'Serving Clients Worldwide' }
                             ].map((item, idx) => (
                                 <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -210,8 +213,6 @@ const ContactForm = () => {
                     >
                         <form
                             onSubmit={submitForm}
-                            action="https://formspree.io/f/YOUR_FORM_ID"
-                            method="POST"
                             style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}
                         >
                             <div style={{ position: 'relative' }}>
