@@ -125,7 +125,8 @@ function App() {
           </Route>
         </Routes>
       </Suspense>
-      );
+    </ErrorBoundary>
+  );
 }
 
-      export default App;
+export default App;
