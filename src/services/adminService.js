@@ -2459,20 +2459,30 @@ const AdminService = {
                 supabase.from('queries').select('*').order('date', { ascending: false })
             ]);
 
-            const lds = ldsResponse.data || [];
-            const qs = qsResponse.data || [];
+            let lds = ldsResponse.data || [];
+            let qs = qsResponse.data || [];
 
-            // Merge and sort by date
+            // If Supabase returns empty arrays (e.g. RLS read blocks on Anon inserts), aggressively load from local storage
+            if (lds.length === 0) lds = AdminService._getData('gt_leads', initialLeads);
+            if (qs.length === 0) qs = AdminService._getData('gt_queries', initialQueries);
+
+            // Merge and sort safely handling undefined dates
             const combined = [...lds, ...qs].sort((a, b) => {
-                const dateA = new Date(a.date || 0);
-                const dateB = new Date(b.date || 0);
-                return dateB - dateA;
+                const timeA = new Date(a.date || a.createdAt || 0).getTime();
+                const timeB = new Date(b.date || b.createdAt || 0).getTime();
+                return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
             });
 
             return combined;
         } catch (error) {
             console.error('Supabase fetch leads error, falling back:', error);
-            return AdminService._getData('gt_leads', initialLeads);
+            const localLds = AdminService._getData('gt_leads', initialLeads);
+            const localQs = AdminService._getData('gt_queries', initialQueries);
+            return [...localLds, ...localQs].sort((a, b) => {
+                const timeA = new Date(a.date || 0).getTime();
+                const timeB = new Date(b.date || 0).getTime();
+                return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
+            });
         }
     },
 
