@@ -2453,13 +2453,22 @@ const AdminService = {
     // --- Sales Portal Methods ---
     async getLeads() {
         try {
-            const { data, error } = await supabase
-                .from('gt_leads')
-                .select('*')
-                .order('id', { ascending: false });
+            const [ldsResponse, qsResponse] = await Promise.all([
+                supabase.from('gt_leads').select('*').order('date', { ascending: false }),
+                supabase.from('queries').select('*').order('date', { ascending: false })
+            ]);
 
-            if (error) throw error;
-            return data;
+            const lds = ldsResponse.data || [];
+            const qs = qsResponse.data || [];
+
+            // Merge and sort by date
+            const combined = [...lds, ...qs].sort((a, b) => {
+                const dateA = new Date(a.date || 0);
+                const dateB = new Date(b.date || 0);
+                return dateB - dateA;
+            });
+
+            return combined;
         } catch (error) {
             console.error('Supabase fetch leads error, falling back:', error);
             return AdminService._getData('gt_leads', initialLeads);

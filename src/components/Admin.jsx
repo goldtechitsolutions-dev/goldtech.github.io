@@ -313,7 +313,7 @@ const Admin = ({ currentUser }) => {
 
             setStats([
                 { title: 'Total Visits', value: '12,450', change: '+12%', icon: <Users size={24} color="#004687" /> },
-                { title: 'Active Leads', value: (lds?.length || 0).toString(), change: 'Hot', icon: <MessageSquare size={24} color="#f59e0b" /> },
+                { title: 'Active Leads', value: ((lds?.length || 0) + (qs?.length || 0)).toString(), change: 'Hot', icon: <MessageSquare size={24} color="#f59e0b" /> },
                 { title: 'Talent Pipeline', value: (apps?.length || 0).toString(), change: 'Active', icon: <Briefcase size={24} color="#D4AF37" /> },
                 { title: 'Infrastructure', value: '99.98%', change: 'Uptime', icon: <Activity size={24} color="#3b82f6" /> },
                 { title: 'Security', value: 'Secure', change: 'No Alerts', icon: <Shield size={24} color="#D4AF37" /> },
