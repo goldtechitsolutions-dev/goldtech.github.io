@@ -59,6 +59,8 @@ const Admin = ({ currentUser }) => {
     const [chatStats, setChatStats] = useState(null);
     const [chatLogs, setChatLogs] = useState([]);
     const [leaveRequests, setLeaveRequests] = useState([]); // [FIX] Added for proper async fetching
+    const [blogs, setBlogs] = useState([]);
+    const [videos, setVideos] = useState([]);
     const [candidates, setCandidates] = useState([]);
     const [jobs, setJobs] = useState([]);
     const [companyInfo, setCompanyInfo] = useState({ address: '', email: '', phone: '', footerOpacity: 0.5 });
@@ -254,7 +256,7 @@ const Admin = ({ currentUser }) => {
             const [
                 apps, qs, lds, meets, usrs, rls, jbs, leaves,
                 health, services, logs, infra, cLogs, keys, jit, audits, creds, sec,
-                metrics, proj, fin, info, fetchedClients, history, cLogs_fetched, cStats_fetched
+                metrics, proj, fin, info, fetchedClients, history, cLogs_fetched, cStats_fetched, fetchedBlogs, fetchedVideos
             ] = await Promise.all([
                 AdminService.getApplications(),
                 AdminService.getQueries(),
@@ -281,7 +283,9 @@ const Admin = ({ currentUser }) => {
                 AdminService.getClients(),
                 AdminService.getPasswordResetHistory(),
                 AdminService.getChatLogs(),
-                AdminService.getChatStats()
+                AdminService.getChatStats(),
+                AdminService.getBlogs(),
+                AdminService.getVideos()
             ]);
 
             setApplications(apps || []);
@@ -311,6 +315,8 @@ const Admin = ({ currentUser }) => {
             setResetHistory(history || []);
             setChatLogs(cLogs_fetched || []);
             setChatStats(cStats_fetched || null);
+            setBlogs(fetchedBlogs || []);
+            setVideos(fetchedVideos || []);
 
             // Basic heuristic for DB status
             setDbStatus('Healthy');
@@ -640,6 +646,10 @@ const Admin = ({ currentUser }) => {
                 await AdminService.deleteClient(id);
             } else if (type === 'job') {
                 await AdminService.deleteJob(id);
+            } else if (type === 'blog') {
+                await AdminService.deleteBlog(id);
+            } else if (type === 'video') {
+                await AdminService.deleteVideo(id);
             }
             await refreshData();
             if (selectedItem && selectedItem.id === id) closeModal();
@@ -775,6 +785,59 @@ const Admin = ({ currentUser }) => {
         if (window.confirm('Are you sure you want to delete this credential?')) {
             await AdminService.deleteCredential(id);
             await refreshData();
+        }
+    };
+
+    // --- Blogging & Media Handlers ---
+    const handleOpenBlogModal = (blog = null) => {
+        setSelectedItem(blog);
+        setModalType('upsert_blog');
+        setFormData(blog || { title: '', content: '', category: 'Technology', author: 'Admin', thumbnail_url: '', tags: [] });
+    };
+
+    const handleBlogSubmit = async (e) => {
+        e.preventDefault();
+        setModalError('');
+        setIsSubmitting(true);
+        try {
+            if (selectedItem && selectedItem.id) {
+                await AdminService.updateBlog({ ...selectedItem, ...formData });
+            } else {
+                await AdminService.addBlog(formData);
+            }
+            await refreshData();
+            closeModal();
+        } catch (err) {
+            setModalError('Failed to save blog post.');
+            console.error(err);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleOpenVideoModal = (video = null) => {
+        setSelectedItem(video);
+        setModalType('upsert_video');
+        setFormData(video || { title: '', video_url: '', thumbnail_url: '', category: 'Corporate', description: '' });
+    };
+
+    const handleVideoSubmit = async (e) => {
+        e.preventDefault();
+        setModalError('');
+        setIsSubmitting(true);
+        try {
+            if (selectedItem && selectedItem.id) {
+                await AdminService.updateVideo({ ...selectedItem, ...formData });
+            } else {
+                await AdminService.addVideo(formData);
+            }
+            await refreshData();
+            closeModal();
+        } catch (err) {
+            setModalError('Failed to save video.');
+            console.error(err);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -940,6 +1003,9 @@ const Admin = ({ currentUser }) => {
                     <button onClick={() => setActiveTab('audit')} style={navLinkStyle(activeTab === 'audit')}>
                         <ClipboardList size={18} /> Action Audit
                     </button>
+                    <button onClick={() => setActiveTab('blogs-media')} style={navLinkStyle(activeTab === 'blogs-media')}>
+                        <FileText size={18} /> Blogs & Media
+                    </button>
                     <button onClick={() => navigate('/research')} style={navLinkStyle(false)}>
                         <Microscope size={18} /> Research Lab
                     </button>
@@ -1001,6 +1067,7 @@ const Admin = ({ currentUser }) => {
 
                             {activeTab === 'audit' && 'Immutable Logs'}
                             {activeTab === 'access-management' && 'Privileged Access Management'}
+                            {activeTab === 'blogs-media' && 'Blogs & Media Management'}
                             {activeTab === 'settings' && 'Core Configuration'}
                         </h1>
                         <p style={{ color: '#64748b', fontSize: '0.95rem', fontWeight: '500' }}>Authenticated Command Session • {new Date().toLocaleDateString()}</p>
@@ -1786,68 +1853,207 @@ const Admin = ({ currentUser }) => {
                     </div>
                 )}
 
-                {
-                    activeTab === 'project-health' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-                                {projectHealth.map(project => (
-                                    <div key={project.id} style={{
-                                        ...cardStyle,
-                                        position: 'relative',
-                                        overflow: 'hidden'
-                                    }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                                            <h4 style={{ margin: 0, color: '#fff', fontWeight: '800', fontSize: '1.1rem' }}>{project.name}</h4>
-                                            <span style={{
-                                                padding: '4px 10px', borderRadius: '8px', fontSize: '0.65rem', fontWeight: '800',
-                                                background: project.risk === 'Low' ? 'rgba(16, 185, 129, 0.1)' : project.risk === 'Medium' ? 'rgba(212, 175, 55, 0.1)' : 'rgba(225, 29, 72, 0.1)',
-                                                color: project.risk === 'Low' ? '#10b981' : project.risk === 'Medium' ? '#D4AF37' : '#f43f5e',
-                                                border: `1px solid ${project.risk === 'Low' ? 'rgba(16, 185, 129, 0.2)' : project.risk === 'Medium' ? 'rgba(212, 175, 55, 0.2)' : 'rgba(225, 29, 72, 0.2)'}`,
-                                                textTransform: 'uppercase'
-                                            }}>{project.risk} Risk</span>
-                                        </div>
-                                        <div style={{ height: '6px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
-                                            <div style={{ width: `${project.progress}%`, height: '100%', background: project.status === 'On Track' ? 'linear-gradient(90deg, #10b981, #34d399)' : 'linear-gradient(90deg, #D4AF37, #F2D06B)' }}></div>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#94a3b8', fontWeight: '600' }}>
-                                            <span>Completion: {project.progress}%</span>
-                                            <span>Due: {project.deadline}</span>
-                                        </div>
-                                        <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '1px solid rgba(255, 255, 255, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <div style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>Milestones: <strong style={{ color: '#D4AF37' }}>{project.milestonesReached}/{project.milestones}</strong></div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: project.status === 'On Track' ? '#10b981' : '#f43f5e' }}></div>
-                                                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: project.status === 'On Track' ? '#10b981' : '#f43f5e', textTransform: 'uppercase' }}>{project.status}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <div style={cardStyle}>
-                                <h3 style={{ marginBottom: '20px' }}>Project Delivery Timeline</h3>
-                                <div style={{ height: '300px' }}>
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={projectHealth}>
-                                            <defs>
-                                                <linearGradient id="colorProgress" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.3} />
-                                                    <stop offset="95%" stopColor="#D4AF37" stopOpacity={0} />
-                                                </linearGradient>
-                                            </defs>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                            <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                                            <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                                            <Tooltip
-                                                contentStyle={{ background: '#001E3C', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }}
-                                                itemStyle={{ color: '#D4AF37' }}
-                                            />
-                                            <Area type="monotone" dataKey="progress" stroke="#D4AF37" strokeWidth={3} fillOpacity={1} fill="url(#colorProgress)" />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
+                {activeTab === 'blogs-media' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                        {/* Blogs Section */}
+                        <div style={cardStyle}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                                <div>
+                                    <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800' }}>In-Depth Insights (Blogs)</h3>
+                                    <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Manage technical articles and industry insights.</p>
                                 </div>
+                                <button
+                                    onClick={() => handleOpenBlogModal()}
+                                    style={{
+                                        background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                                        color: '#000',
+                                        border: 'none',
+                                        padding: '10px 20px',
+                                        borderRadius: '10px',
+                                        fontWeight: '800',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px'
+                                    }}
+                                >
+                                    <Plus size={18} /> CREATE BLOG
+                                </button>
+                            </div>
+
+                            <div style={{ overflowX: 'auto' }} className="custom-scrollbar">
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
+                                            <th style={thStyle}>Identity Ref</th>
+                                            <th style={thStyle}>Publication Title</th>
+                                            <th style={thStyle}>Category</th>
+                                            <th style={thStyle}>Artifact Author</th>
+                                            <th style={thStyle}>Temporal Date</th>
+                                            <th style={{ ...thStyle, textAlign: 'right' }}>Management</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {blogs.map((blog) => (
+                                            <tr key={blog.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
+                                                <td style={tdStyle}>
+                                                    <code style={{ fontSize: '0.7rem', color: '#D4AF37', background: 'rgba(212, 175, 55, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                                                        B-{blog.id.toString().slice(-4)}
+                                                    </code>
+                                                </td>
+                                                <td style={{ ...tdStyle, fontWeight: '700', color: '#fff' }}>{blog.title}</td>
+                                                <td style={tdStyle}>
+                                                    <span style={{ fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '4px 10px', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                                                        {blog.category}
+                                                    </span>
+                                                </td>
+                                                <td style={tdStyle}>{blog.author}</td>
+                                                <td style={tdStyle}>{blog.date}</td>
+                                                <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                                        <button onClick={() => handleOpenBlogModal(blog)} style={{ color: '#D4AF37', background: 'rgba(212, 175, 55, 0.1)', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}><Edit size={16} /></button>
+                                                        <button onClick={() => handleDelete(blog.id, 'blog')} style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}><Trash2 size={16} /></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
-                    )
+
+                        {/* Videos Section */}
+                        <div style={cardStyle}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                                <div>
+                                    <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800' }}>Intelligence & Media (Videos)</h3>
+                                    <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Manage corporate videos and solution walkthroughs.</p>
+                                </div>
+                                <button
+                                    onClick={() => handleOpenVideoModal()}
+                                    style={{
+                                        background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                                        color: '#000',
+                                        border: 'none',
+                                        padding: '10px 20px',
+                                        borderRadius: '10px',
+                                        fontWeight: '800',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px'
+                                    }}
+                                >
+                                    <Plus size={18} /> UPLOAD VIDEO
+                                </button>
+                            </div>
+
+                            <div style={{ overflowX: 'auto' }} className="custom-scrollbar">
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
+                                            <th style={thStyle}>Media Ref</th>
+                                            <th style={thStyle}>Presentation Title</th>
+                                            <th style={thStyle}>Category</th>
+                                            <th style={thStyle}>Endpoint Source</th>
+                                            <th style={{ ...thStyle, textAlign: 'right' }}>Management</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {videos.map((video) => (
+                                            <tr key={video.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
+                                                <td style={tdStyle}>
+                                                    <code style={{ fontSize: '0.7rem', color: '#D4AF37', background: 'rgba(212, 175, 55, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                                                        V-{video.id.toString().slice(-4)}
+                                                    </code>
+                                                </td>
+                                                <td style={{ ...tdStyle, fontWeight: '700', color: '#fff' }}>{video.title}</td>
+                                                <td style={tdStyle}>
+                                                    <span style={{ fontSize: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px 10px', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                                        {video.category}
+                                                    </span>
+                                                </td>
+                                                <td style={tdStyle}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '0.85rem' }}>
+                                                        <Globe size={14} /> {video.video_url.length > 30 ? video.video_url.substring(0, 30) + '...' : video.video_url}
+                                                    </div>
+                                                </td>
+                                                <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                                        <button onClick={() => handleOpenVideoModal(video)} style={{ color: '#D4AF37', background: 'rgba(212, 175, 55, 0.1)', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}><Edit size={16} /></button>
+                                                        <button onClick={() => handleDelete(video.id, 'video')} style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}><Trash2 size={16} /></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'project-health' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                            {projectHealth.map(project => (
+                                <div key={project.id} style={{
+                                    ...cardStyle,
+                                    position: 'relative',
+                                    overflow: 'hidden'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                                        <h4 style={{ margin: 0, color: '#fff', fontWeight: '800', fontSize: '1.1rem' }}>{project.name}</h4>
+                                        <span style={{
+                                            padding: '4px 10px', borderRadius: '8px', fontSize: '0.65rem', fontWeight: '800',
+                                            background: project.risk === 'Low' ? 'rgba(16, 185, 129, 0.1)' : project.risk === 'Medium' ? 'rgba(212, 175, 55, 0.1)' : 'rgba(225, 29, 72, 0.1)',
+                                            color: project.risk === 'Low' ? '#10b981' : project.risk === 'Medium' ? '#D4AF37' : '#f43f5e',
+                                            border: `1px solid ${project.risk === 'Low' ? 'rgba(16, 185, 129, 0.2)' : project.risk === 'Medium' ? 'rgba(212, 175, 55, 0.2)' : 'rgba(225, 29, 72, 0.2)'}`,
+                                            textTransform: 'uppercase'
+                                        }}>{project.risk} Risk</span>
+                                    </div>
+                                    <div style={{ height: '6px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
+                                        <div style={{ width: `${project.progress}%`, height: '100%', background: project.status === 'On Track' ? 'linear-gradient(90deg, #10b981, #34d399)' : 'linear-gradient(90deg, #D4AF37, #F2D06B)' }}></div>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#94a3b8', fontWeight: '600' }}>
+                                        <span>Completion: {project.progress}%</span>
+                                        <span>Due: {project.deadline}</span>
+                                    </div>
+                                    <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '1px solid rgba(255, 255, 255, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>Milestones: <strong style={{ color: '#D4AF37' }}>{project.milestonesReached}/{project.milestones}</strong></div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: project.status === 'On Track' ? '#10b981' : '#f43f5e' }}></div>
+                                            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: project.status === 'On Track' ? '#10b981' : '#f43f5e', textTransform: 'uppercase' }}>{project.status}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div style={cardStyle}>
+                            <h3 style={{ marginBottom: '20px' }}>Project Delivery Timeline</h3>
+                            <div style={{ height: '300px' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={projectHealth}>
+                                        <defs>
+                                            <linearGradient id="colorProgress" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="#D4AF37" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                        <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                                        <Tooltip
+                                            contentStyle={{ background: '#001E3C', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }}
+                                            itemStyle={{ color: '#D4AF37' }}
+                                        />
+                                        <Area type="monotone" dataKey="progress" stroke="#D4AF37" strokeWidth={3} fillOpacity={1} fill="url(#colorProgress)" />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </div>
+                )
                 }
 
                 {
@@ -2897,7 +3103,7 @@ const Admin = ({ currentUser }) => {
 
                 {/* Modal Overlay System */}
                 {
-                    modalType && ['application', 'query', 'meeting', 'upsert_client', 'upsert_credential', 'upsert_user', 'chat_transcript', 'post_job', 'loading'].includes(modalType) && (
+                    modalType && ['application', 'query', 'meeting', 'upsert_client', 'upsert_credential', 'upsert_user', 'chat_transcript', 'post_job', 'loading', 'upsert_blog', 'upsert_video'].includes(modalType) && (
                         <div style={{
                             position: 'fixed',
                             top: 0,
@@ -3524,7 +3730,199 @@ const Admin = ({ currentUser }) => {
                                                         opacity: isSubmitting ? 0.7 : 1
                                                     }}
                                                 >
-                                                    {isSubmitting ? 'Processing...' : (selectedItem ? 'Authorize Update' : 'Authorize Identity Onboarding')}
+                                                    {isSubmitting ? 'SAVING...' : (selectedItem ? 'UPDATE USER' : 'CREATE USER')}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    )}
+
+                                    {modalType === 'upsert_blog' && (
+                                        <form onSubmit={handleBlogSubmit} style={{ width: '100%' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                                <h2 style={{ color: '#fff', fontSize: '1.5rem', fontWeight: '800' }}>{selectedItem ? 'Refine Publication' : 'Engineer New Insight'}</h2>
+
+                                                <div>
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Publication Title</label>
+                                                    <input
+                                                        type="text"
+                                                        value={formData.title || ''}
+                                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        placeholder="Enter a compelling title"
+                                                        required
+                                                    />
+                                                </div>
+
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Thematic Category</label>
+                                                        <select
+                                                            value={formData.category || 'Technology'}
+                                                            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        >
+                                                            <option value="Technology">Technology</option>
+                                                            <option value="Industry">Industry</option>
+                                                            <option value="Innovation">Innovation</option>
+                                                            <option value="Strategy">Strategy</option>
+                                                            <option value="Corporate">Corporate</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Artifact Author</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.author || 'Admin'}
+                                                            onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Visual Thumbnail (URL)</label>
+                                                    <input
+                                                        type="url"
+                                                        value={formData.thumbnail_url || ''}
+                                                        onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
+                                                        placeholder="https://images.unsplash.com/..."
+                                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                    />
+                                                </div>
+
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Inline Image (URL)</label>
+                                                        <input
+                                                            type="url"
+                                                            value={formData.image_url || ''}
+                                                            onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                                                            placeholder="https://images.unsplash.com/..."
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Background Image (URL)</label>
+                                                        <input
+                                                            type="url"
+                                                            value={formData.bg_image_url || ''}
+                                                            onChange={(e) => setFormData({ ...formData, bg_image_url: e.target.value })}
+                                                            placeholder="https://images.unsplash.com/..."
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Insight Content (Markdown/Raw Text)</label>
+                                                    <textarea
+                                                        value={formData.content || ''}
+                                                        onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                                                        style={{ width: '100%', height: '200px', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff', resize: 'vertical' }}
+                                                        placeholder="Type or paste the blog content here..."
+                                                        required
+                                                    />
+                                                </div>
+
+                                                <button
+                                                    type="submit"
+                                                    disabled={isSubmitting}
+                                                    style={{
+                                                        background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                                                        color: '#000',
+                                                        border: 'none',
+                                                        padding: '14px',
+                                                        borderRadius: '10px',
+                                                        cursor: 'pointer',
+                                                        fontWeight: '800',
+                                                        textTransform: 'uppercase'
+                                                    }}
+                                                >
+                                                    {isSubmitting ? 'SAVING...' : (selectedItem ? 'UPDATE PUBLICATION' : 'PUBLISH INSIGHT')}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    )}
+
+                                    {modalType === 'upsert_video' && (
+                                        <form onSubmit={handleVideoSubmit} style={{ width: '100%' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                                <h2 style={{ color: '#fff', fontSize: '1.5rem', fontWeight: '800' }}>{selectedItem ? 'Refine Media' : 'Sync New Asset'}</h2>
+
+                                                <div>
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Presentation Title</label>
+                                                    <input
+                                                        type="text"
+                                                        value={formData.title || ''}
+                                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        required
+                                                    />
+                                                </div>
+
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Media Category</label>
+                                                        <select
+                                                            value={formData.category || 'Corporate'}
+                                                            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        >
+                                                            <option value="Corporate">Corporate</option>
+                                                            <option value="Demo">Solution Demo</option>
+                                                            <option value="Tutorial">Tutorial</option>
+                                                            <option value="Interview">Leadership Insight</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Video Endpoint (Embed URL)</label>
+                                                        <input
+                                                            type="url"
+                                                            value={formData.video_url || ''}
+                                                            onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                                                            placeholder="https://www.youtube.com/embed/..."
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Asset Thumbnail (URL)</label>
+                                                    <input
+                                                        type="url"
+                                                        value={formData.thumbnail_url || ''}
+                                                        onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
+                                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Strategic Description</label>
+                                                    <textarea
+                                                        value={formData.description || ''}
+                                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                                        style={{ width: '100%', height: '100px', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff', resize: 'vertical' }}
+                                                        required
+                                                    />
+                                                </div>
+
+                                                <button
+                                                    type="submit"
+                                                    disabled={isSubmitting}
+                                                    style={{
+                                                        background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                                                        color: '#000',
+                                                        border: 'none',
+                                                        padding: '14px',
+                                                        borderRadius: '10px',
+                                                        cursor: 'pointer',
+                                                        fontWeight: '800',
+                                                        textTransform: 'uppercase'
+                                                    }}
+                                                >
+                                                    {isSubmitting ? 'SYNCING...' : (selectedItem ? 'UPDATE ASSET' : 'INITIALIZE ASSET')}
                                                 </button>
                                             </div>
                                         </form>

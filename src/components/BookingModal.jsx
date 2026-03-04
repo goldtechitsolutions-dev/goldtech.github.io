@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, X, Calendar } from 'lucide-react';
 import modernOffice from '../assets/modern-office.png';
 import AdminService from '../services/adminService';
 import { countryCodes } from '../utils/countryData';
 
 const BookingModal = () => {
-    const [showForm, setShowForm] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         countryCode: '+91',
@@ -14,15 +14,17 @@ const BookingModal = () => {
         email: '',
         topic: '',
         date: '',
-        timeHour: '10',
-        timeMinute: '00',
-        timeAmPm: 'AM'
+        timeHour: '',
+        timeMinute: '',
+        timeAmPm: ''
     });
     const [submitted, setSubmitted] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [phoneError, setPhoneError] = useState("");
+    const [dateDisplayValue, setDateDisplayValue] = useState("");
     const dropdownRef = useRef(null);
+    const dateInputRef = useRef(null);
 
     const filteredCountries = countryCodes.filter(c =>
         (c.name && c.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -36,17 +38,27 @@ const BookingModal = () => {
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+
+        if (isModalOpen) {
+            document.body.classList.add('modal-open');
+        } else {
+            document.body.classList.remove('modal-open');
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.body.classList.remove('modal-open');
+        };
+    }, [isModalOpen]);
 
     const services = [
+        "AI & Machine Learning",
+        "IT Support & Service",
         "Business Transformation",
         "Software Security",
         "Cloud Migration",
         "Custom App Development",
-        "IT Consulting",
-        "Data Analytics",
-        "AI & Machine Learning"
+        "Data Analytics"
     ];
 
 
@@ -120,7 +132,7 @@ const BookingModal = () => {
             // Reset after longer delay to ensure user sees it
             setTimeout(() => {
                 setSubmitted(false);
-                setShowForm(false);
+                setIsModalOpen(false);
                 setFormData({
                     name: '',
                     countryCode: '+91',
@@ -150,58 +162,56 @@ const BookingModal = () => {
     const today = getTodayLocal();
 
     const handleDateChange = (e) => {
-        const selectedDate = e.target.value;
-        if (selectedDate && selectedDate < today) {
+        const value = e.target.value; // Expected YYYY-MM-DD from native picker
+        if (value && value < today) {
             alert("Please select today's date or a future date.");
-            setFormData({ ...formData, date: today });
             return;
         }
-        setFormData({ ...formData, date: selectedDate });
+
+        if (value) {
+            setFormData({ ...formData, date: value });
+            // Convert YYYY-MM-DD to DD/MM/YYYY for display
+            const [y, m, d] = value.split('-');
+            setDateDisplayValue(`${d}/${m}/${y}`);
+        }
     };
 
-    const inputStyle = {
-        width: '100%',
-        padding: '12px 16px',
-        borderRadius: '8px',
-        border: '1px solid rgba(255,255,255,0.2)',
-        background: 'rgba(255,255,255,0.05)',
-        color: '#fff',
-        fontSize: '1rem',
-        outline: 'none',
-        marginBottom: '15px'
+    const handleManualDateChange = (e) => {
+        let val = e.target.value;
+        // Allow only numbers and slashes
+        val = val.replace(/[^0-9/]/g, '');
+
+        // Auto-format as DD/MM/YYYY
+        if (val.length === 2 && !val.includes('/')) val += '/';
+        if (val.length === 5 && val.split('/').length === 2) val += '/';
+        if (val.length > 10) val = val.substring(0, 10);
+
+        setDateDisplayValue(val);
+
+        // Try to validate and sync with formData.date (YYYY-MM-DD)
+        if (val.length === 10) {
+            const [d, m, y] = val.split('/');
+            const isoDate = `${y}-${m}-${d}`;
+            const dateObj = new Date(isoDate);
+
+            if (!isNaN(dateObj.getTime())) {
+                if (isoDate < today) {
+                    setPhoneError("Please select a future date"); // Reusing error display or alert
+                } else {
+                    setFormData(prev => ({ ...prev, date: isoDate }));
+                    setPhoneError("");
+                }
+            }
+        }
     };
 
-    const selectStyle = {
-        ...inputStyle,
-        appearance: 'none',
-        backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffffff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")`,
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'right 12px center',
-        backgroundSize: '12px',
-        cursor: 'pointer',
-        paddingRight: '30px'
-    };
 
     return (
-        <section style={{
-            padding: '80px 20px',
-            position: 'relative',
-            overflow: 'hidden',
-            backgroundImage: `url(${modernOffice})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundAttachment: 'fixed'
+        <section className="booking-section" style={{
+            backgroundImage: `url(${modernOffice})`
         }}>
             {/* Dark Overlay */}
-            <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                background: 'rgba(0, 0, 0, 0.4)',
-                zIndex: 0
-            }} />
+            <div className="booking-overlay" />
 
             <motion.div
                 initial={{ opacity: 0, y: 50 }}
@@ -211,370 +221,379 @@ const BookingModal = () => {
                 className="container"
                 style={{ position: 'relative', zIndex: 1 }}
             >
-                <div style={{
-                    position: 'relative',
-                    background: 'rgba(15, 23, 42, 0.85)', // More transparent for glassmorphism
-                    backdropFilter: 'blur(10px)',
-                    borderRadius: '24px',
-                    padding: '60px 40px',
-                    textAlign: 'center',
-                    overflow: 'hidden',
-                    boxShadow: '0 20px 50px rgba(0,0,0,0.4)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    maxWidth: '800px', // Reverted to original width
-                    margin: '0 auto'
-                }}>
-                    {/* Background Tech Glow */}
-                    <motion.div
-                        animate={{
-                            scale: [1, 1.2, 1],
-                            opacity: [0.3, 0.5, 0.3]
-                        }}
-                        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                <div style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto' }}>
+                    <h2 className="booking-hero-title">
+                        Ready to Transform Your <span style={{
+                            background: 'linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent'
+                        }}>Business?</span>
+                    </h2>
+
+                    <p style={{ fontSize: '1.25rem', marginBottom: '3.5rem', maxWidth: '750px', margin: '0 auto 3.5rem', color: '#cbd5e1', lineHeight: '1.6' }}>
+                        Join the elite circle of businesses powered by our advanced technology solutions. Experience the true gold standard of digital excellence through our expert consultation.
+                    </p>
+
+                    <motion.button
+                        id="open-booking-modal-btn"
+                        onClick={() => setIsModalOpen(true)}
+                        whileHover={{ scale: 1.05, boxShadow: "0 0 40px rgba(212, 175, 55, 0.4)" }}
+                        whileTap={{ scale: 0.95 }}
                         style={{
-                            position: 'absolute',
-                            top: '-50%',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            width: '800px',
-                            height: '800px',
-                            background: 'radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%)',
-                            filter: 'blur(80px)',
-                            zIndex: 0,
-                            pointerEvents: 'none'
+                            background: 'linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c)',
+                            color: '#0f172a',
+                            padding: '20px 60px',
+                            borderRadius: '50px',
+                            fontWeight: '900',
+                            fontSize: '1.25rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            textTransform: 'uppercase',
+                            letterSpacing: '2px'
                         }}
-                    />
-
-                    {/* Content */}
-                    <div style={{ position: 'relative', zIndex: 10 }}>
-                        <AnimatePresence mode="wait">
-                            {!showForm && !submitted ? (
-                                <motion.div
-                                    key="cta"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                >
-                                    <h2 className="booking-hero-title">
-                                        Ready to Transform Your <span style={{
-                                            background: 'linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c)',
-                                            WebkitBackgroundClip: 'text',
-                                            WebkitTextFillColor: 'transparent'
-                                        }}>Business?</span>
-                                    </h2>
-
-                                    <p style={{ fontSize: '1.25rem', marginBottom: '3rem', maxWidth: '700px', margin: '0 auto 3rem', color: '#cbd5e1', lineHeight: '1.6' }}>
-                                        Schedule a free 30-minute consultation with our tech experts to discuss your needs and unlock new possibilities.
-                                    </p>
-
-                                    <motion.button
-                                        id="open-booking-form-btn"
-                                        onClick={() => setShowForm(true)}
-                                        whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(212, 175, 55, 0.6)" }}
-                                        whileTap={{ scale: 0.95 }}
-                                        style={{
-                                            background: 'linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c)',
-                                            color: '#0f172a',
-                                            padding: '18px 48px',
-                                            borderRadius: '50px',
-                                            fontWeight: '800',
-                                            fontSize: '1.2rem',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            textTransform: 'uppercase',
-                                            letterSpacing: '1px'
-                                        }}
-                                    >
-                                        FREE CONSULTATION
-                                    </motion.button>
-                                </motion.div>
-                            ) : submitted ? (
-                                <motion.div
-                                    key="success"
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    style={{ padding: '40px' }}
-                                >
-                                    <div style={{ fontSize: '4rem', marginBottom: '20px' }}>✅</div>
-                                    <h3 style={{ color: '#fff', fontSize: '2rem', marginBottom: '10px' }}>Consultation Booked!</h3>
-                                    <p style={{ color: '#cbd5e1' }}>We have received your request. Our team will contact you shortly at {formData.email} to confirm the details.</p>
-                                </motion.div>
-                            ) : (
-                                <motion.div
-                                    key="form"
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
-                                    style={{ textAlign: 'left', maxWidth: '500px', margin: '0 auto' }}
-                                >
-                                    <h3 style={{ color: '#fff', fontSize: '1.8rem', marginBottom: '20px', textAlign: 'center' }}>Book Your Session</h3>
-                                    <form onSubmit={handleSubmit} id="booking-consultation-form">
-                                        <input
-                                            id="booking-name-input"
-                                            type="text"
-                                            placeholder="Your Name"
-                                            required
-                                            value={formData.name}
-                                            onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                            style={inputStyle}
-                                        />
-
-                                        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', position: 'relative' }}>
-                                            <div ref={dropdownRef} style={{ width: '100px', position: 'relative' }}>
-                                                <div
-                                                    id="country-code-dropdown-toggle"
-                                                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                                    style={{
-                                                        padding: '12px 10px',
-                                                        borderRadius: '8px',
-                                                        background: 'rgba(255, 255, 255, 0.05)',
-                                                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                                                        color: '#fff',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '8px',
-                                                        cursor: 'pointer',
-                                                        height: '100%',
-                                                        justifyContent: 'space-between'
-                                                    }}
-                                                >
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        <img
-                                                            src={`https://flagcdn.com/w20/${countryCodes.find(c => c.code === formData.countryCode)?.iso || 'in'}.png`}
-                                                            width="20"
-                                                            alt="flag"
-                                                            style={{ borderRadius: '2px' }}
-                                                        />
-                                                        <span style={{ fontSize: '0.9rem' }}>{formData.countryCode}</span>
-                                                    </div>
-                                                    <ChevronDown size={14} color="#fff" style={{ transform: isDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
-                                                </div>
-
-                                                {isDropdownOpen && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, y: 10 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        style={{
-                                                            position: 'absolute',
-                                                            top: 'calc(100% + 5px)',
-                                                            left: 0,
-                                                            width: '220px',
-                                                            background: '#0f172a',
-                                                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                            borderRadius: '8px',
-                                                            boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                                                            zIndex: 100,
-                                                            maxHeight: '250px',
-                                                            overflow: 'hidden',
-                                                            display: 'flex',
-                                                            flexDirection: 'column'
-                                                        }}
-                                                    >
-                                                        <div style={{ padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                                            <input
-                                                                id="country-search-input"
-                                                                type="text"
-                                                                placeholder="Search country..."
-                                                                value={searchTerm}
-                                                                onChange={(e) => setSearchTerm(e.target.value)}
-                                                                autoFocus
-                                                                style={{
-                                                                    width: '100%',
-                                                                    padding: '6px 10px',
-                                                                    borderRadius: '6px',
-                                                                    background: 'rgba(255,255,255,0.05)',
-                                                                    border: '1px solid rgba(255,255,255,0.1)',
-                                                                    color: '#fff',
-                                                                    fontSize: '0.85rem',
-                                                                    outline: 'none'
-                                                                }}
-                                                            />
-                                                        </div>
-                                                        <div style={{ flex: 1, overflowY: 'auto', padding: '5px' }}>
-                                                            {filteredCountries.length > 0 ? (
-                                                                filteredCountries.map(c => (
-                                                                    <div
-                                                                        key={`${c.iso}-${c.code}`}
-                                                                        onClick={() => {
-                                                                            setFormData({ ...formData, countryCode: c.code });
-                                                                            setIsDropdownOpen(false);
-                                                                            setSearchTerm("");
-                                                                        }}
-                                                                        style={{
-                                                                            padding: '8px 10px',
-                                                                            borderRadius: '6px',
-                                                                            display: 'flex',
-                                                                            alignItems: 'center',
-                                                                            gap: '10px',
-                                                                            cursor: 'pointer',
-                                                                            transition: 'background 0.2s',
-                                                                            background: formData.countryCode === c.code ? 'rgba(212, 175, 55, 0.2)' : 'transparent'
-                                                                        }}
-                                                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
-                                                                        onMouseLeave={(e) => e.currentTarget.style.background = formData.countryCode === c.code ? 'rgba(212, 175, 55, 0.2)' : 'transparent'}
-                                                                    >
-                                                                        <img
-                                                                            src={`https://flagcdn.com/w20/${c.iso}.png`}
-                                                                            width="20"
-                                                                            alt={c.name}
-                                                                            style={{ borderRadius: '2px', flexShrink: 0 }}
-                                                                        />
-                                                                        <span style={{ color: '#fff', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                                            {c.name} ({c.code})
-                                                                        </span>
-                                                                    </div>
-                                                                ))
-                                                            ) : (
-                                                                <div style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '10px', fontSize: '0.85rem' }}>No countries found</div>
-                                                            )}
-                                                        </div>
-                                                    </motion.div>
-                                                )}
-                                            </div>
-                                            <div style={{ flex: 1, position: 'relative' }}>
-                                                <input
-                                                    id="booking-mobile-input"
-                                                    type="tel"
-                                                    placeholder="Mobile Number"
-                                                    required
-                                                    value={formData.mobile}
-                                                    onChange={e => {
-                                                        setFormData({ ...formData, mobile: e.target.value });
-                                                        setPhoneError("");
-                                                    }}
-                                                    style={{
-                                                        ...inputStyle,
-                                                        marginBottom: 0,
-                                                        width: '100%',
-                                                        border: phoneError ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.2)'
-                                                    }}
-                                                />
-                                                {phoneError && (
-                                                    <motion.span
-                                                        initial={{ opacity: 0, scale: 0.9 }}
-                                                        animate={{ opacity: 1, scale: 1 }}
-                                                        style={{
-                                                            position: 'absolute',
-                                                            left: '0',
-                                                            bottom: '-18px',
-                                                            color: '#ef4444',
-                                                            fontSize: '0.7rem',
-                                                            fontWeight: '500'
-                                                        }}
-                                                    >
-                                                        {phoneError}
-                                                    </motion.span>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <input
-                                            id="booking-email-input"
-                                            type="email"
-                                            placeholder="Your Email"
-                                            required
-                                            value={formData.email}
-                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                            style={inputStyle}
-                                        />
-
-                                        <input
-                                            id="booking-topic-input"
-                                            list="services-list"
-                                            placeholder="Service Interested In (Type or Select)"
-                                            value={formData.topic}
-                                            onChange={e => setFormData({ ...formData, topic: e.target.value })}
-                                            style={inputStyle}
-                                        />
-                                        <datalist id="services-list">
-                                            {services.map(s => <option key={s} value={s} />)}
-                                        </datalist>
-
-                                        <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
-                                            <input
-                                                id="booking-date-input"
-                                                type="date"
-                                                required
-                                                min={today}
-                                                value={formData.date}
-                                                onChange={handleDateChange}
-                                                style={{ ...inputStyle, marginBottom: 0, flex: 1 }}
-                                            />
-
-                                            {/* Custom Time Picker */}
-                                            <div style={{ display: 'flex', gap: '5px', flex: 1, height: '45px' }}>
-                                                <select
-                                                    id="booking-hour-select"
-                                                    value={formData.timeHour}
-                                                    onChange={e => setFormData({ ...formData, timeHour: e.target.value })}
-                                                    style={{ ...selectStyle, marginBottom: 0, padding: '5px', textAlign: 'center' }}
-                                                >
-                                                    {hours.map(h => <option key={h} value={h} style={{ color: '#000' }}>{h}</option>)}
-                                                </select>
-                                                <span style={{ color: '#fff', alignSelf: 'center' }}>:</span>
-                                                <select
-                                                    id="booking-minute-select"
-                                                    value={formData.timeMinute}
-                                                    onChange={e => setFormData({ ...formData, timeMinute: e.target.value })}
-                                                    style={{ ...selectStyle, marginBottom: 0, padding: '5px', textAlign: 'center' }}
-                                                >
-                                                    {minutes.map(m => <option key={m} value={m} style={{ color: '#000' }}>{m}</option>)}
-                                                </select>
-                                                <select
-                                                    id="booking-ampm-select"
-                                                    value={formData.timeAmPm}
-                                                    onChange={e => setFormData({ ...formData, timeAmPm: e.target.value })}
-                                                    style={{ ...selectStyle, marginBottom: 0, padding: '5px', textAlign: 'center' }}
-                                                >
-                                                    <option value="AM" style={{ color: '#000' }}>AM</option>
-                                                    <option value="PM" style={{ color: '#000' }}>PM</option>
-                                                </select>
-                                            </div>
-                                        </div>
-
-                                        <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
-                                            <button
-                                                id="booking-cancel-btn"
-                                                type="button"
-                                                onClick={() => setShowForm(false)}
-                                                style={{
-                                                    flex: 1,
-                                                    padding: '12px',
-                                                    borderRadius: '8px',
-                                                    border: '1px solid #cbd5e1',
-                                                    background: 'transparent',
-                                                    color: '#fff',
-                                                    cursor: 'pointer'
-                                                }}
-                                            >
-                                                Cancel
-                                            </button>
-                                            <button
-                                                id="booking-confirm-btn"
-                                                type="submit"
-                                                disabled={isBooking}
-                                                style={{
-                                                    flex: 1,
-                                                    padding: '12px',
-                                                    borderRadius: '8px',
-                                                    border: 'none',
-                                                    background: 'linear-gradient(90deg, #D4AF37 0%, #F2D06B 100%)',
-                                                    color: '#002C5F',
-                                                    fontWeight: 'bold',
-                                                    cursor: isBooking ? 'not-allowed' : 'pointer',
-                                                    opacity: isBooking ? 0.7 : 1
-                                                }}
-                                            >
-                                                {isBooking ? 'Booking...' : 'Confirm Booking'}
-                                            </button>
-                                        </div>
-                                    </form>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                    >
+                        FREE CONSULTATION
+                    </motion.button>
                 </div>
             </motion.div>
+
+            <AnimatePresence>
+                {isModalOpen && (
+                    <motion.div
+                        className="booking-modal-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={(e) => e.target === e.currentTarget && setIsModalOpen(false)}
+                    >
+                        <motion.div
+                            className="booking-modal-card"
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <button className="modal-close-btn" onClick={() => setIsModalOpen(false)}>
+                                <X size={24} />
+                            </button>
+
+                            {/* Background Tech Glow */}
+                            <motion.div
+                                animate={{
+                                    scale: [1, 1.2, 1],
+                                    opacity: [0.3, 0.5, 0.3]
+                                }}
+                                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                                className="booking-glow"
+                            />
+
+                            {/* Content */}
+                            <div style={{ position: 'relative', zIndex: 10 }}>
+                                <AnimatePresence mode="wait">
+                                    {submitted ? (
+                                        <motion.div
+                                            key="success"
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            className="booking-success-card"
+                                        >
+                                            <div className="booking-success-icon">✅</div>
+                                            <h3 style={{ color: '#fff', fontSize: '2.5rem', marginBottom: '15px' }}>Consultation Booked!</h3>
+                                            <p style={{ color: '#cbd5e1', fontSize: '1.1rem' }}>We have received your request. Our team will contact you shortly at <strong>{formData.email}</strong> to confirm the details.</p>
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div
+                                            key="form"
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -20 }}
+                                            className="booking-form-container"
+                                        >
+                                            <h3 className="booking-form-title">Book Your Session</h3>
+                                            <form onSubmit={handleSubmit} id="booking-consultation-form">
+                                                <input
+                                                    id="booking-name-input"
+                                                    type="text"
+                                                    placeholder="Your Name"
+                                                    required
+                                                    className="booking-input"
+                                                    value={formData.name}
+                                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                                />
+
+                                                <div className="booking-input-group">
+                                                    <div ref={dropdownRef} className="booking-country-select-container">
+                                                        <div
+                                                            id="country-code-dropdown-toggle"
+                                                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                                            style={{
+                                                                padding: '12px 10px',
+                                                                borderRadius: '8px',
+                                                                background: 'rgba(255, 255, 255, 0.05)',
+                                                                border: '1px solid rgba(255, 255, 255, 0.2)',
+                                                                color: '#fff',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '8px',
+                                                                cursor: 'pointer',
+                                                                height: '100%',
+                                                                justifyContent: 'space-between'
+                                                            }}
+                                                        >
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                <img
+                                                                    src={`https://flagcdn.com/w20/${countryCodes.find(c => c.code === formData.countryCode)?.iso || 'in'}.png`}
+                                                                    width="20"
+                                                                    alt="flag"
+                                                                    style={{ borderRadius: '2px' }}
+                                                                />
+                                                                <span style={{ fontSize: '0.9rem' }}>{formData.countryCode}</span>
+                                                            </div>
+                                                            <ChevronDown size={14} color="#fff" style={{ transform: isDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
+                                                        </div>
+
+                                                        {isDropdownOpen && (
+                                                            <motion.div
+                                                                initial={{ opacity: 0, y: 10 }}
+                                                                animate={{ opacity: 1, y: 0 }}
+                                                                style={{
+                                                                    position: 'absolute',
+                                                                    top: 'calc(100% + 5px)',
+                                                                    left: 0,
+                                                                    width: '220px',
+                                                                    background: '#0f172a',
+                                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                                    borderRadius: '8px',
+                                                                    boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                                                                    zIndex: 100,
+                                                                    maxHeight: '250px',
+                                                                    overflow: 'hidden',
+                                                                    display: 'flex',
+                                                                    flexDirection: 'column'
+                                                                }}
+                                                            >
+                                                                <div style={{ padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                                    <input
+                                                                        id="country-search-input"
+                                                                        type="text"
+                                                                        placeholder="Search country..."
+                                                                        value={searchTerm}
+                                                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                                                        autoFocus
+                                                                        style={{
+                                                                            width: '100%',
+                                                                            padding: '6px 10px',
+                                                                            borderRadius: '6px',
+                                                                            background: 'rgba(255,255,255,0.05)',
+                                                                            border: '1px solid rgba(255,255,255,0.1)',
+                                                                            color: '#fff',
+                                                                            fontSize: '0.85rem',
+                                                                            outline: 'none'
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                                <div style={{ flex: 1, overflowY: 'auto', padding: '5px' }}>
+                                                                    {filteredCountries.length > 0 ? (
+                                                                        filteredCountries.map(c => (
+                                                                            <div
+                                                                                key={`${c.iso}-${c.code}`}
+                                                                                onClick={() => {
+                                                                                    setFormData({ ...formData, countryCode: c.code });
+                                                                                    setIsDropdownOpen(false);
+                                                                                    setSearchTerm("");
+                                                                                }}
+                                                                                style={{
+                                                                                    padding: '8px 10px',
+                                                                                    borderRadius: '6px',
+                                                                                    display: 'flex',
+                                                                                    alignItems: 'center',
+                                                                                    gap: '10px',
+                                                                                    cursor: 'pointer',
+                                                                                    transition: 'background 0.2s',
+                                                                                    background: formData.countryCode === c.code ? 'rgba(212, 175, 55, 0.2)' : 'transparent'
+                                                                                }}
+                                                                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                                                                                onMouseLeave={(e) => e.currentTarget.style.background = formData.countryCode === c.code ? 'rgba(212, 175, 55, 0.2)' : 'transparent'}
+                                                                            >
+                                                                                <img
+                                                                                    src={`https://flagcdn.com/w20/${c.iso}.png`}
+                                                                                    width="20"
+                                                                                    alt={c.name}
+                                                                                    style={{ borderRadius: '2px', flexShrink: 0 }}
+                                                                                />
+                                                                                <span style={{ color: '#fff', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                                    {c.name} ({c.code})
+                                                                                </span>
+                                                                            </div>
+                                                                        ))
+                                                                    ) : (
+                                                                        <div style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '10px', fontSize: '0.85rem' }}>No countries found</div>
+                                                                    )}
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </div>
+                                                    <div className="booking-mobile-input-container">
+                                                        <input
+                                                            id="booking-mobile-input"
+                                                            type="tel"
+                                                            placeholder="Mobile Number"
+                                                            required
+                                                            value={formData.mobile}
+                                                            onChange={e => {
+                                                                setFormData({ ...formData, mobile: e.target.value });
+                                                                setPhoneError("");
+                                                            }}
+                                                            className="booking-input"
+                                                            style={{
+                                                                marginBottom: 0,
+                                                                border: phoneError ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.2)'
+                                                            }}
+                                                        />
+                                                        {phoneError && (
+                                                            <motion.span
+                                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                                animate={{ opacity: 1, scale: 1 }}
+                                                                style={{
+                                                                    position: 'absolute',
+                                                                    left: '0',
+                                                                    bottom: '-18px',
+                                                                    color: '#ef4444',
+                                                                    fontSize: '0.7rem',
+                                                                    fontWeight: '500'
+                                                                }}
+                                                            >
+                                                                {phoneError}
+                                                            </motion.span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <input
+                                                    id="booking-email-input"
+                                                    type="email"
+                                                    placeholder="Your Email"
+                                                    required
+                                                    value={formData.email}
+                                                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                                    className="booking-input"
+                                                />
+
+                                                <input
+                                                    id="booking-topic-input"
+                                                    list="services-list"
+                                                    placeholder="Service Interested In (Type or Select)"
+                                                    value={formData.topic}
+                                                    onChange={e => setFormData({ ...formData, topic: e.target.value })}
+                                                    className="booking-input"
+                                                />
+                                                <datalist id="services-list">
+                                                    {services.map(s => <option key={s} value={s} />)}
+                                                </datalist>
+
+                                                <div className="booking-row">
+                                                    <div className="date-input-wrapper" style={{ position: 'relative', flex: 1 }}>
+                                                        <input
+                                                            id="booking-date-input"
+                                                            type="text"
+                                                            placeholder="DD/MM/YYYY"
+                                                            value={dateDisplayValue}
+                                                            onChange={handleManualDateChange}
+                                                            className="booking-input"
+                                                            required
+                                                            style={{ paddingRight: '45px' }}
+                                                        />
+                                                        <Calendar
+                                                            size={20}
+                                                            className="calendar-icon"
+                                                            onClick={() => dateInputRef.current?.showPicker()}
+                                                            style={{
+                                                                position: 'absolute',
+                                                                right: '12px',
+                                                                top: '50%',
+                                                                transform: 'translateY(-50%)',
+                                                                cursor: 'pointer',
+                                                                color: 'rgba(255,255,255,0.6)',
+                                                                zIndex: 10
+                                                            }}
+                                                        />
+                                                        <input
+                                                            ref={dateInputRef}
+                                                            type="date"
+                                                            min={today}
+                                                            onChange={handleDateChange}
+                                                            style={{
+                                                                position: 'absolute',
+                                                                visibility: 'hidden',
+                                                                width: 0,
+                                                                height: 0
+                                                            }}
+                                                        />
+                                                    </div>
+
+                                                    <div className="time-picker-container">
+                                                        <select
+                                                            id="booking-hour-select"
+                                                            value={formData.timeHour}
+                                                            onChange={e => setFormData({ ...formData, timeHour: e.target.value })}
+                                                            className="booking-select"
+                                                            required
+                                                        >
+                                                            <option value="" disabled style={{ color: '#000' }}>Hr</option>
+                                                            {hours.map(h => <option key={h} value={h} style={{ color: '#000' }}>{h}</option>)}
+                                                        </select>
+                                                        <span style={{ color: '#fff', alignSelf: 'center' }}>:</span>
+                                                        <select
+                                                            id="booking-minute-select"
+                                                            value={formData.timeMinute}
+                                                            onChange={e => setFormData({ ...formData, timeMinute: e.target.value })}
+                                                            className="booking-select"
+                                                            required
+                                                        >
+                                                            <option value="" disabled style={{ color: '#000' }}>Min</option>
+                                                            {minutes.map(m => <option key={m} value={m} style={{ color: '#000' }}>{m}</option>)}
+                                                        </select>
+                                                        <select
+                                                            id="booking-ampm-select"
+                                                            value={formData.timeAmPm}
+                                                            onChange={e => setFormData({ ...formData, timeAmPm: e.target.value })}
+                                                            className="booking-select"
+                                                            required
+                                                        >
+                                                            <option value="" disabled style={{ color: '#000' }}>AM/PM</option>
+                                                            <option value="AM" style={{ color: '#000' }}>AM</option>
+                                                            <option value="PM" style={{ color: '#000' }}>PM</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div className="booking-btn-group">
+                                                    <button
+                                                        id="booking-cancel-btn"
+                                                        type="button"
+                                                        onClick={() => setIsModalOpen(false)}
+                                                        className="booking-btn-cancel"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        id="booking-confirm-btn"
+                                                        type="submit"
+                                                        disabled={isBooking}
+                                                        className="booking-btn-confirm"
+                                                    >
+                                                        {isBooking ? 'Booking...' : 'Confirm Booking'}
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </section>
     );
 };

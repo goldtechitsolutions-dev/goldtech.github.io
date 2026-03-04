@@ -7,6 +7,11 @@ import SEO from './SEO';
 
 const services = [
     {
+        icon: Cpu,
+        title: "AI & Machine Learning",
+        description: "Intelligent systems that automate processes and enhance business efficiency. Specializing in AI Strategy and engineering, Data for AI, Process for AI, Agentic legacy modernization, Physical AI, and AI Trust."
+    },
+    {
         icon: Code,
         title: "Custom Software Development",
         description: "Tailored software solutions designed to meet your specific business needs and challenges."
@@ -27,11 +32,6 @@ const services = [
         description: "Transform raw data into actionable insights for better decision making."
     },
     {
-        icon: Cpu,
-        title: "AI & Machine Learning",
-        description: "Intelligent systems that automate processes and enhance business efficiency. Specializing in AI Strategy and engineering, Data for AI, Process for AI, Agentic legacy modernization, Physical AI, and AI Trust."
-    },
-    {
         icon: Globe,
         title: "Digital Transformation",
         description: "Comprehensive strategies to modernize your business operations and customer experience."
@@ -43,8 +43,8 @@ const services = [
     },
     {
         icon: Briefcase,
-        title: "Salesforce & SAP",
-        description: "Enterprise-grade CRM and ERP solutions to streamline your business processes and data management."
+        title: "IT Support & Service",
+        description: "Comprehensive managed IT support, system maintenance, and enterprise service management to ensure your business operations never miss a beat."
     },
     {
         icon: Megaphone,

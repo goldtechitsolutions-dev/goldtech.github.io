@@ -6,7 +6,7 @@ import {
     Phone, Mail, Calendar, DollarSign, Target,
     Filter, MoreHorizontal, ArrowRight, FileText,
     MapPin, Clock, BarChart2, UserCheck, File,
-    ExternalLink, MessageSquare, RefreshCw
+    ExternalLink, MessageSquare, RefreshCw, Edit, Trash2, Globe
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -87,6 +87,33 @@ const SalesPortal = ({ currentUser }) => {
     const [showLeadForm, setShowLeadForm] = useState(false);
     const [newLead, setNewLead] = useState({ name: '', contact: '', email: '', stage: 'New', value: '', source: 'Website' });
 
+    // CSS variables for consistency with Admin portal
+    const cardStyle = {
+        background: 'rgba(255, 255, 255, 0.05)',
+        backdropFilter: 'blur(12px)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: '20px',
+        padding: '25px',
+        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)'
+    };
+
+    const thStyle = {
+        padding: '15px 20px',
+        textAlign: 'left',
+        color: '#94a3b8',
+        fontSize: '0.8rem',
+        textTransform: 'uppercase',
+        fontWeight: '800',
+        letterSpacing: '0.5px'
+    };
+
+    const tdStyle = {
+        padding: '18px 20px',
+        color: '#cbd5e1',
+        fontSize: '0.9rem',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.03)'
+    };
+
     // State for API Features
     const [marketNews, setMarketNews] = useState([]);
     const [syncStatus, setSyncStatus] = useState(null);
@@ -98,9 +125,17 @@ const SalesPortal = ({ currentUser }) => {
     const [benchResources, setBenchResources] = useState([]);
     const [rateCards, setRateCards] = useState([]);
     const [lostAnalysis, setLostAnalysis] = useState([]);
-    const [timelineLead, setTimelineLead] = useState(null);
     const [leadTimeline, setLeadTimeline] = useState([]);
     const [isRefreshing, setIsRefreshing] = useState(false);
+
+    // Blogs & Media State
+    const [blogs, setBlogs] = useState([]);
+    const [videos, setVideos] = useState([]);
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [formData, setFormData] = useState({});
+    const [modalType, setModalType] = useState(null);
+    const [modalError, setModalError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // UI State for Modals
     const [proposalModalOpen, setProposalModalOpen] = useState(false);
@@ -123,7 +158,7 @@ const SalesPortal = ({ currentUser }) => {
 
     useEffect(() => {
         const loadInitialData = async () => {
-            const [lds, dls, acts, mts, qrs, srv, scp, bnch, rts, lost, news, studies, pStats] = await Promise.all([
+            const [lds, dls, acts, mts, qrs, srv, scp, bnch, rts, lost, news, studies, pStats, fetchedBlogs, fetchedVideos] = await Promise.all([
                 AdminService.getLeads(),
                 AdminService.getDeals(),
                 AdminService.getSalesActivities ? AdminService.getSalesActivities() : [],
@@ -136,7 +171,9 @@ const SalesPortal = ({ currentUser }) => {
                 AdminService.getLostDealAnalysis ? AdminService.getLostDealAnalysis() : [],
                 AdminService.getMarketIntelligence ? AdminService.getMarketIntelligence() : [],
                 AdminService.getCaseStudies ? AdminService.getCaseStudies() : [],
-                AdminService.getPartnerStats ? AdminService.getPartnerStats() : []
+                AdminService.getPartnerStats ? AdminService.getPartnerStats() : [],
+                AdminService.getBlogs(),
+                AdminService.getVideos()
             ]);
 
             setLeads(lds || []);
@@ -152,6 +189,8 @@ const SalesPortal = ({ currentUser }) => {
             setMarketNews(news || []);
             setCaseStudies(studies || []);
             setPartnerStats(pStats || []);
+            setBlogs(fetchedBlogs || []);
+            setVideos(fetchedVideos || []);
         };
 
         loadInitialData();
@@ -161,18 +200,22 @@ const SalesPortal = ({ currentUser }) => {
         if (isRefreshing) return;
         setIsRefreshing(true);
         try {
-            const [lds, dls, acts, mts, qrs] = await Promise.all([
+            const [lds, dls, acts, mts, qrs, fetchedBlogs, fetchedVideos] = await Promise.all([
                 AdminService.getLeads(),
                 AdminService.getDeals(),
                 AdminService.getSalesActivities ? AdminService.getSalesActivities() : [],
                 AdminService.getMeetings(),
-                AdminService.getQueries()
+                AdminService.getQueries(),
+                AdminService.getBlogs(),
+                AdminService.getVideos()
             ]);
             setLeads(lds || []);
             setDeals(dls || []);
             setActivities(acts || []);
             setMeetings(mts || []);
             setQueries(qrs || []);
+            setBlogs(fetchedBlogs || []);
+            setVideos(fetchedVideos || []);
         } catch (error) {
             console.error("SalesPortal: Error refreshing data", error);
         } finally {
@@ -303,6 +346,78 @@ const SalesPortal = ({ currentUser }) => {
         await refreshData();
     };
 
+    const handleDelete = async (id, type) => {
+        if (window.confirm('Are you sure you want to delete this item?')) {
+            if (type === 'blog') {
+                await AdminService.deleteBlog(id);
+            } else if (type === 'video') {
+                await AdminService.deleteVideo(id);
+            }
+            await refreshData();
+        }
+    };
+
+    const closeModal = () => {
+        setSelectedItem(null);
+        setModalType(null);
+        setFormData({});
+        setModalError('');
+        setIsSubmitting(false);
+    };
+
+    // --- Blogging & Media Handlers ---
+    const handleOpenBlogModal = (blog = null) => {
+        setSelectedItem(blog);
+        setModalType('upsert_blog');
+        setFormData(blog || { title: '', content: '', category: 'Technology', author: currentUser?.name || 'Admin', thumbnail_url: '', tags: [] });
+    };
+
+    const handleBlogSubmit = async (e) => {
+        e.preventDefault();
+        setModalError('');
+        setIsSubmitting(true);
+        try {
+            if (selectedItem && selectedItem.id) {
+                await AdminService.updateBlog({ ...selectedItem, ...formData });
+            } else {
+                await AdminService.addBlog(formData);
+            }
+            await refreshData();
+            closeModal();
+        } catch (err) {
+            setModalError('Failed to save blog post.');
+            console.error(err);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleOpenVideoModal = (video = null) => {
+        setSelectedItem(video);
+        setModalType('upsert_video');
+        setFormData(video || { title: '', video_url: '', thumbnail_url: '', category: 'Corporate', description: '' });
+    };
+
+    const handleVideoSubmit = async (e) => {
+        e.preventDefault();
+        setModalError('');
+        setIsSubmitting(true);
+        try {
+            if (selectedItem && selectedItem.id) {
+                await AdminService.updateVideo({ ...selectedItem, ...formData });
+            } else {
+                await AdminService.addVideo(formData);
+            }
+            await refreshData();
+            closeModal();
+        } catch (err) {
+            setModalError('Failed to save video.');
+            console.error(err);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     // Calculate Stats
     const totalPipelineValue = deals.reduce((acc, deal) => acc + deal.amount, 0);
     const weightedPipelineValue = deals.reduce((acc, deal) => acc + (deal.amount * (deal.probability / 100)), 0);
@@ -380,6 +495,9 @@ const SalesPortal = ({ currentUser }) => {
                     <button onClick={() => setActiveTab('content')} style={navLinkStyle(activeTab === 'content')}>
                         <FileText size={18} /> Case Studies
                     </button>
+                    <button onClick={() => setActiveTab('blogs-media')} style={navLinkStyle(activeTab === 'blogs-media')}>
+                        <FileText size={18} /> Blogs & Media
+                    </button>
                     <button onClick={() => setActiveTab('ops')} style={navLinkStyle(activeTab === 'ops')}>
                         <CheckCircle size={18} /> Operations
                     </button>
@@ -404,6 +522,7 @@ const SalesPortal = ({ currentUser }) => {
                             {activeTab === 'deals' && 'Deal Pipeline'}
                             {activeTab === 'bench' && 'Resource Availability'}
                             {activeTab === 'content' && 'Sales Enablement'}
+                            {activeTab === 'blogs-media' && 'Blogs & Media Management'}
                             {activeTab === 'ops' && 'Sales Operations'}
                         </h1>
                         <p style={{ color: '#94a3b8' }}>Track performance, manage relationships, and close deals.</p>
@@ -1090,6 +1209,151 @@ const SalesPortal = ({ currentUser }) => {
                         </motion.div>
                     )}
 
+                    {activeTab === 'blogs-media' && (
+                        <motion.div
+                            key="blogs-media"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}
+                        >
+                            {/* Blogs Section */}
+                            <div style={cardStyle}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                                    <div>
+                                        <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800' }}>In-Depth Insights (Blogs)</h3>
+                                        <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Manage technical articles and industry insights.</p>
+                                    </div>
+                                    <button
+                                        onClick={() => handleOpenBlogModal()}
+                                        style={{
+                                            background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                                            color: '#000',
+                                            border: 'none',
+                                            padding: '10px 20px',
+                                            borderRadius: '10px',
+                                            fontWeight: '800',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px'
+                                        }}
+                                    >
+                                        <Plus size={18} /> CREATE BLOG
+                                    </button>
+                                </div>
+
+                                <div style={{ overflowX: 'auto' }} className="custom-scrollbar">
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                        <thead>
+                                            <tr style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
+                                                <th style={thStyle}>Identity Ref</th>
+                                                <th style={thStyle}>Publication Title</th>
+                                                <th style={thStyle}>Category</th>
+                                                <th style={thStyle}>Artifact Author</th>
+                                                <th style={thStyle}>Temporal Date</th>
+                                                <th style={{ ...thStyle, textAlign: 'right' }}>Management</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {blogs.map((blog) => (
+                                                <tr key={blog.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
+                                                    <td style={tdStyle}>
+                                                        <code style={{ fontSize: '0.7rem', color: '#D4AF37', background: 'rgba(212, 175, 55, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                                                            B-{blog.id.toString().slice(-4)}
+                                                        </code>
+                                                    </td>
+                                                    <td style={{ ...tdStyle, fontWeight: '700', color: '#fff' }}>{blog.title}</td>
+                                                    <td style={tdStyle}>
+                                                        <span style={{ fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '4px 10px', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                                                            {blog.category}
+                                                        </span>
+                                                    </td>
+                                                    <td style={tdStyle}>{blog.author}</td>
+                                                    <td style={tdStyle}>{blog.date}</td>
+                                                    <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                                            <button onClick={() => handleOpenBlogModal(blog)} style={{ color: '#D4AF37', background: 'rgba(212, 175, 55, 0.1)', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}><Edit size={16} /></button>
+                                                            <button onClick={() => handleDelete(blog.id, 'blog')} style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}><Trash2 size={16} /></button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Videos Section */}
+                            <div style={cardStyle}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                                    <div>
+                                        <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800' }}>Intelligence & Media (Videos)</h3>
+                                        <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Manage corporate videos and solution walkthroughs.</p>
+                                    </div>
+                                    <button
+                                        onClick={() => handleOpenVideoModal()}
+                                        style={{
+                                            background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+                                            color: '#000',
+                                            border: 'none',
+                                            padding: '10px 20px',
+                                            borderRadius: '10px',
+                                            fontWeight: '800',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px'
+                                        }}
+                                    >
+                                        <Plus size={18} /> UPLOAD VIDEO
+                                    </button>
+                                </div>
+
+                                <div style={{ overflowX: 'auto' }} className="custom-scrollbar">
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                        <thead>
+                                            <tr style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
+                                                <th style={thStyle}>Media Ref</th>
+                                                <th style={thStyle}>Presentation Title</th>
+                                                <th style={thStyle}>Category</th>
+                                                <th style={thStyle}>Endpoint Source</th>
+                                                <th style={{ ...thStyle, textAlign: 'right' }}>Management</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {videos.map((video) => (
+                                                <tr key={video.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
+                                                    <td style={tdStyle}>
+                                                        <code style={{ fontSize: '0.7rem', color: '#D4AF37', background: 'rgba(212, 175, 55, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                                                            V-{video.id.toString().slice(-4)}
+                                                        </code>
+                                                    </td>
+                                                    <td style={{ ...tdStyle, fontWeight: '700', color: '#fff' }}>{video.title}</td>
+                                                    <td style={tdStyle}>
+                                                        <span style={{ fontSize: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px 10px', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                                            {video.category}
+                                                        </span>
+                                                    </td>
+                                                    <td style={tdStyle}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '0.85rem' }}>
+                                                            <Globe size={14} /> {video.video_url.length > 30 ? video.video_url.substring(0, 30) + '...' : video.video_url}
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                                            <button onClick={() => handleOpenVideoModal(video)} style={{ color: '#D4AF37', background: 'rgba(212, 175, 55, 0.1)', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}><Edit size={16} /></button>
+                                                            <button onClick={() => handleDelete(video.id, 'video')} style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}><Trash2 size={16} /></button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
                     {activeTab === 'ops' && (
                         <motion.div key="ops" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                             <GlassCard>
@@ -1191,6 +1455,179 @@ const SalesPortal = ({ currentUser }) => {
                                         <ActionButton onClick={() => { alert('Scoping Saved & Sent to Solutions Architect!'); setScopingOpen(false); }} variant="primary" icon={CheckCircle}>Save & Request Review</ActionButton>
                                     </div>
                                 </div>
+                            </GlassCard>
+                        </div>
+                    )}
+                    {/* Blog & Video Modals */}
+                    {(modalType === 'upsert_blog' || modalType === 'upsert_video') && (
+                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px' }}>
+                            <GlassCard style={{ width: '100%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+                                    <h2 style={{ color: '#fff', fontSize: '1.5rem', fontWeight: '800' }}>
+                                        {modalType === 'upsert_blog' ? (selectedItem ? 'Refine Publication' : 'Engineer New Insight') : (selectedItem ? 'Refine Media' : 'Sync New Asset')}
+                                    </h2>
+                                    <button onClick={closeModal} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><XCircle size={24} /></button>
+                                </div>
+
+                                {modalType === 'upsert_blog' && (
+                                    <form onSubmit={handleBlogSubmit} style={{ width: '100%' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                            <div>
+                                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Publication Title</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.title || ''}
+                                                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                                    style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                    placeholder="Enter a compelling title"
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                                <div>
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Thematic Category</label>
+                                                    <select
+                                                        value={formData.category || 'Technology'}
+                                                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                    >
+                                                        <option value="Technology">Technology</option>
+                                                        <option value="Industry">Industry</option>
+                                                        <option value="Innovation">Innovation</option>
+                                                        <option value="Strategy">Strategy</option>
+                                                        <option value="Corporate">Corporate</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Artifact Author</label>
+                                                    <input
+                                                        type="text"
+                                                        value={formData.author || 'Admin'}
+                                                        onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Visual Thumbnail (URL)</label>
+                                                <input
+                                                    type="url"
+                                                    value={formData.thumbnail_url || ''}
+                                                    onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
+                                                    placeholder="https://images.unsplash.com/..."
+                                                    style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                />
+                                            </div>
+
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                                <div>
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Inline Image (URL)</label>
+                                                    <input
+                                                        type="url"
+                                                        value={formData.image_url || ''}
+                                                        onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                                                        placeholder="https://images.unsplash.com/..."
+                                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Background Image (URL)</label>
+                                                    <input
+                                                        type="url"
+                                                        value={formData.bg_image_url || ''}
+                                                        onChange={(e) => setFormData({ ...formData, bg_image_url: e.target.value })}
+                                                        placeholder="https://images.unsplash.com/..."
+                                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Insight Content (Markdown/Raw Text)</label>
+                                                <textarea
+                                                    value={formData.content || ''}
+                                                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                                                    style={{ width: '100%', height: '200px', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff', resize: 'vertical' }}
+                                                    placeholder="Type or paste the blog content here..."
+                                                    required
+                                                />
+                                            </div>
+                                            <ActionButton type="submit" disabled={isSubmitting} variant="primary" style={{ width: '100%', justifyContent: 'center' }}>
+                                                {isSubmitting ? 'SAVING...' : (selectedItem ? 'UPDATE PUBLICATION' : 'PUBLISH INSIGHT')}
+                                            </ActionButton>
+                                        </div>
+                                    </form>
+                                )}
+
+                                {modalType === 'upsert_video' && (
+                                    <form onSubmit={handleVideoSubmit} style={{ width: '100%' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                            <div>
+                                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Presentation Title</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.title || ''}
+                                                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                                    style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                                <div>
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Media Category</label>
+                                                    <select
+                                                        value={formData.category || 'Corporate'}
+                                                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                    >
+                                                        <option value="Corporate">Corporate</option>
+                                                        <option value="Demo">Solution Demo</option>
+                                                        <option value="Tutorial">Tutorial</option>
+                                                        <option value="Interview">Leadership Insight</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Video Endpoint (Embed URL)</label>
+                                                    <input
+                                                        type="url"
+                                                        value={formData.video_url || ''}
+                                                        onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                                                        placeholder="https://www.youtube.com/embed/..."
+                                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Asset Thumbnail (URL)</label>
+                                                <input
+                                                    type="url"
+                                                    value={formData.thumbnail_url || ''}
+                                                    onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
+                                                    style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Strategic Description</label>
+                                                <textarea
+                                                    value={formData.description || ''}
+                                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                                    style={{ width: '100%', height: '100px', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff', resize: 'vertical' }}
+                                                    required
+                                                />
+                                            </div>
+                                            <ActionButton type="submit" disabled={isSubmitting} variant="primary" style={{ width: '100%', justifyContent: 'center' }}>
+                                                {isSubmitting ? 'SYNCING...' : (selectedItem ? 'UPDATE ASSET' : 'INITIALIZE ASSET')}
+                                            </ActionButton>
+                                        </div>
+                                    </form>
+                                )}
                             </GlassCard>
                         </div>
                     )}

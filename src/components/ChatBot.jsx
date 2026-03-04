@@ -11,13 +11,13 @@ import { countryCodes } from '../utils/countryData';
 
 const ChatBot = () => {
     const serviceOptions = [
+        { name: 'AI & ML', icon: <Cpu size={16} />, color: '#8b5cf6' },
         { name: 'Custom Software', icon: <Code size={16} />, color: '#3b82f6' },
         { name: 'Web & Mobile Apps', icon: <Smartphone size={16} />, color: '#2563eb' },
-        { name: 'AI & ML', icon: <Cpu size={16} />, color: '#8b5cf6' },
         { name: 'Cloud Infrastructure', icon: <Server size={16} />, color: '#6366f1' },
         { name: 'Cybersecurity', icon: <Shield size={16} />, color: '#ef4444' },
         { name: 'Data Analytics', icon: <Database size={16} />, color: '#10b981' },
-        { name: 'Salesforce & SAP', icon: <Briefcase size={16} />, color: '#0ea5e9' },
+        { name: 'IT support & Service', icon: <Briefcase size={16} />, color: '#0ea5e9' },
         { name: 'Digital Marketing', icon: <Megaphone size={16} />, color: '#f59e0b' },
         { name: 'Digital Transformation', icon: <Globe size={16} />, color: '#14b8a6' },
         { name: 'Other', icon: <MoreHorizontal size={16} />, color: '#64748b' }
@@ -230,7 +230,7 @@ const ChatBot = () => {
 
             // Services - Prioritize Specific Intent
             { keys: ['web', 'website', 'web dev', 'web application', 'build a site', 'app', 'mobile app', 'android', 'ios', 'application'], answer: "We build high-performance, responsive websites and mobile applications (iOS/Android) using the latest technologies. Are you looking for a custom web or mobile solution?" },
-            { keys: ['salesforce', 'sap', 'crm', 'erp'], answer: "We provide expert Salesforce and SAP implementation, customization, and management to optimize your enterprise workflows and CRM needs." },
+            { keys: ['salesforce', 'sap', 'crm', 'erp', 'it support', 'support', 'maintenance'], answer: "We provide comprehensive Managed IT Support & Services, including system maintenance and enterprise service management to ensure your business operations never miss a beat. How can we support your infrastructure today?" },
             { keys: ['ai', 'artificial intelligence', 'ml', 'machine learning', 'genai'], answer: "We specialize in AI solutions including AI Strategy & engineering, Data for AI, Process for AI, Agentic legacy modernization, Physical AI, and AI Trust. How can AI help your business?" },
             { keys: ['cloud', 'supabase', 'github', 'hosting'], answer: "We offer comprehensive cloud services specializing in high-performance architectures on Supabase and GitHub Enterprise." },
 

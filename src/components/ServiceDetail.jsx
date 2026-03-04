@@ -118,20 +118,20 @@ const serviceData = {
             "Wearable and IoT Integrations"
         ]
     },
-    "salesforce-&-sap": {
-        title: "Salesforce & SAP",
-        subtitle: "Maximizing ROI on Enterprise Platform Investments",
-        overview: "GoldTech helps you unlock the full potential of your CRM and ERP ecosystems. We specialize in complex implementations, migrations, and custom development that aligns Salesforce and SAP with your specific business workflows.",
-        details: "Our certified consultants ensure your enterprise platforms are not just repositories of data, but engines of growth and efficiency through deep customization and intelligent automation.",
+    "it-support-&-service": {
+        title: "IT Support & Service",
+        subtitle: "Ensuring Operational Continuity and Technical Excellence",
+        overview: "GoldTech provides end-to-end IT support and managed services designed to keep your business running at peak performance. We understand that your digital infrastructure is the lifeblood of your organization, which is why we offer proactive monitoring and rapid-response support solutions.",
+        details: "Our expert support teams manage everything from routine maintenance and security patching to complex network troubleshooting and helpdesk operations, allowing your internal teams to focus on strategic growth.",
         bgImage: "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=2500&auto=format&fit=crop",
         contentBgImage: "https://images.unsplash.com/photo-1556761175-5973bc0f22b7?q=80&w=2000&auto=format&fit=crop",
         benefits: [
-            "End-to-End Implementation & Rollout",
-            "Custom Apex & ABAP Development",
-            "Complex Data Migration & Cleansing",
-            "Integration with Third-Party Ecosystems",
-            "AppExchange & SAP Store Solutions",
-            "Performance Tuning & Platform Audit"
+            "24/7 Managed IT Support & Helpdesk",
+            "Proactive System Monitoring & Maintenance",
+            "Hardware & Software Lifecycle Management",
+            "Network Infrastructure Troubleshooting",
+            "Backup & Disaster Recovery Management",
+            "IT Service Management (ITSM) Consulting"
         ]
     },
     "digital-&-media-marketing": {

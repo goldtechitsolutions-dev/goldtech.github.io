@@ -215,6 +215,15 @@ const initialTechRadar = [
     { id: 3, tech: 'Post-Quantum Crypto', quadrant: 'Security', status: 'Assess', description: 'Long term security roadmap.' }
 ];
 
+const initialBlogs = [
+    { id: 1, title: "The Future of AI in Banking", content: "AI is revolutionizing the banking sector by enhancing security and improving customer service...", category: "Technology", author: "Admin", date: "Oct 15, 2025", slug: "future-of-ai-banking", tags: ["AI", "Banking", "FinTech"] },
+    { id: 2, title: "Sustainable Supply Chains", content: "How blockchain and AI are making supply chains more transparent and eco-friendly...", category: "Industry", author: "Admin", date: "Sep 28, 2025", slug: "sustainable-supply-chains", tags: ["Sustainability", "Supply Chain"] },
+];
+
+const initialVideos = [
+    { id: 1, title: "GoldTech Solutions Overview", video_url: "https://www.youtube.com/embed/dQw4w9WgXcQ", thumbnail_url: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3", category: "Corporate", description: "Learn about our mission and services." },
+];
+
 const initialRoles = [
     { id: 1, name: 'Admin', permissions: { users: 'read_write', content: 'read_write', reports: 'read_write', settings: 'read_write' } },
     { id: 2, name: 'HR', permissions: { users: 'read_write', content: 'read', reports: 'read', settings: 'none' } },
@@ -3050,7 +3059,159 @@ const AdminService = {
             AdminService._saveData('gt_chat_logs', filtered);
             return fallbackLog;
         }
-    }
+    },
+    // --- Blogs ---
+    getBlogs: async () => {
+        try {
+            const { data, error } = await supabase
+                .from('blogs')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            return data.map(blog => {
+                let unpacked = { ...blog };
+                if (unpacked.content) {
+                    const match = unpacked.content.match(/<!-- GTMETA: (.*?) -->/);
+                    if (match) {
+                        try {
+                            const meta = JSON.parse(match[1]);
+                            unpacked.image_url = meta.image_url;
+                            unpacked.bg_image_url = meta.bg_image_url;
+                            unpacked.content = unpacked.content.replace(match[0], '').trim();
+                        } catch (e) { }
+                    }
+                }
+                return {
+                    ...unpacked,
+                    date: new Date(blog.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                };
+            });
+        } catch (error) {
+            console.error('Supabase fetch blogs error, falling back:', error);
+            return AdminService._getData('gt_blogs', []);
+        }
+    },
+    addBlog: async (blog) => {
+        let payload = { ...blog, slug: blog.title.toLowerCase().replace(/ /g, '-') };
+        const meta = { image_url: payload.image_url, bg_image_url: payload.bg_image_url };
+        if (meta.image_url || meta.bg_image_url) {
+            payload.content = (payload.content || '') + `\n\n<!-- GTMETA: ${JSON.stringify(meta)} -->`;
+        }
+        delete payload.image_url;
+        delete payload.bg_image_url;
+
+        try {
+            const { data, error } = await supabase
+                .from('blogs')
+                .insert([payload])
+                .select();
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            const blogs = await AdminService.getBlogs();
+            const newBlog = { ...blog, id: Date.now(), date: new Date().toLocaleDateString(), slug: blog.title.toLowerCase().replace(/ /g, '-') };
+            AdminService._saveData('gt_blogs', [newBlog, ...blogs]);
+            return newBlog;
+        }
+    },
+    updateBlog: async (updatedBlog) => {
+        let payload = { ...updatedBlog };
+        const meta = { image_url: payload.image_url, bg_image_url: payload.bg_image_url };
+
+        // Strip existing meta if any
+        if (payload.content) {
+            payload.content = payload.content.replace(/<!-- GTMETA: .*? -->/, '').trim();
+        }
+
+        if (meta.image_url || meta.bg_image_url) {
+            payload.content = (payload.content || '') + `\n\n<!-- GTMETA: ${JSON.stringify(meta)} -->`;
+        }
+        delete payload.image_url;
+        delete payload.bg_image_url;
+
+        try {
+            const { data, error } = await supabase
+                .from('blogs')
+                .update(payload)
+                .eq('id', payload.id)
+                .select();
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            const blogs = await AdminService.getBlogs();
+            const newBlogs = blogs.map(b => b.id === updatedBlog.id ? updatedBlog : b);
+            AdminService._saveData('gt_blogs', newBlogs);
+            return updatedBlog;
+        }
+    },
+    deleteBlog: async (id) => {
+        try {
+            const { error } = await supabase.from('blogs').delete().eq('id', id);
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            const blogs = await AdminService.getBlogs();
+            AdminService._saveData('gt_blogs', blogs.filter(b => b.id !== id));
+            return true;
+        }
+    },
+
+    // --- Videos ---
+    getVideos: async () => {
+        try {
+            const { data, error } = await supabase
+                .from('videos')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Supabase fetch videos error, falling back:', error);
+            return AdminService._getData('gt_videos', []);
+        }
+    },
+    addVideo: async (video) => {
+        try {
+            const { data, error } = await supabase
+                .from('videos')
+                .insert([video])
+                .select();
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            const videos = await AdminService.getVideos();
+            const newVideo = { ...video, id: Date.now() };
+            AdminService._saveData('gt_videos', [newVideo, ...videos]);
+            return newVideo;
+        }
+    },
+    updateVideo: async (updatedVideo) => {
+        try {
+            const { data, error } = await supabase
+                .from('videos')
+                .update(updatedVideo)
+                .eq('id', updatedVideo.id)
+                .select();
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            const videos = await AdminService.getVideos();
+            const newVideos = videos.map(v => v.id === updatedVideo.id ? updatedVideo : v);
+            AdminService._saveData('gt_videos', newVideos);
+            return updatedVideo;
+        }
+    },
+    deleteVideo: async (id) => {
+        try {
+            const { error } = await supabase.from('videos').delete().eq('id', id);
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            const videos = await AdminService.getVideos();
+            AdminService._saveData('gt_videos', videos.filter(v => v.id !== id));
+            return true;
+        }
+    },
 };
 
 export default AdminService;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, User, Calendar, Tag } from 'lucide-react';
@@ -6,53 +6,40 @@ import DOMPurify from 'dompurify';
 import SEO from './SEO';
 import Breadcrumbs from './Breadcrumbs';
 
-const insightData = {
-    "the-future-of-ai-in-banking": {
-        title: "The Future of AI in Banking",
-        category: "Technology",
-        date: "Oct 15, 2025",
-        author: "Dr. Sarah Chen",
-        content: `
-            <p>Artificial Intelligence is no longer just a buzzword in the banking sector; it is a fundamental driver of transformation. From personalized customer experiences to fraud detection and risk management, AI is reshaping how financial institutions operate.</p>
-            <h3>Personalization at Scale</h3>
-            <p>Banks are leveraging machine learning algorithms to analyze customer spending habits and offer tailored financial advice. This level of personalization was previously impossible to achieve at scale.</p>
-            <h3>Enhanced Security</h3>
-            <p>Real-time fraud detection systems powered by AI can identify suspicious patterns in milliseconds, protecting both the bank and its customers from financial loss.</p>
-            <h3>Operational Efficiency</h3>
-            <p>Robotic Process Automation (RPA) combined with AI is automating back-office operations, reducing errors, and freeing up human employees to focus on high-value tasks.</p>
-        `
-    },
-    "sustainable-supply-chains": {
-        title: "Sustainable Supply Chains",
-        category: "Industry",
-        date: "Sep 28, 2025",
-        author: "James Wilson",
-        content: `
-            <p>Sustainability is moving from a corporate social responsibility (CSR) initiative to a core business strategy. Consumers and regulators alike are demanding transparency and ethical sourcing in supply chains.</p>
-            <h3>Blockchain for Transparency</h3>
-            <p>Blockchain technology provides an immutable record of a product's journey from raw material to the end consumer. This ensures authenticity and ethical sourcing.</p>
-            <h3>Optimizing Logistics</h3>
-            <p>AI-driven logistics platforms are optimizing delivery routes to minimize carbon footprints and reduce fuel consumption.</p>
-        `
-    },
-    "cybersecurity-best-practices": {
-        title: "Cybersecurity Best Practices",
-        category: "Security",
-        date: "Sep 10, 2025",
-        author: "Michael Ross",
-        content: `
-            <p>In an increasingly digital world, cybersecurity is paramount. Organizations must adopt a proactive approach to security to safeguard their assets and reputation.</p>
-            <h3>Zero Trust Architecture</h3>
-            <p>The "never trust, always verify" approach is becoming the standard. Zero Trust ensures that strict identity verification is required for every person and device trying to access resources on a private network.</p>
-            <h3>Employee Training</h3>
-            <p>Human error remains the leading cause of security breaches. Regular training and phishing simulations are essential to keep employees vigilant.</p>
-        `
-    }
-};
+import AdminService from '../services/adminService';
 
 const InsightDetail = () => {
     const { id } = useParams();
-    const insight = insightData[id];
+    const [insight, setInsight] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchInsight = async () => {
+            try {
+                const blogs = await AdminService.getBlogs();
+                const found = blogs?.find(b => {
+                    const slug = b.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                    return slug === id || b.id.toString() === id || b.slug === id;
+                });
+                setInsight(found || null);
+            } catch (error) {
+                console.error("Error fetching insight:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchInsight();
+    }, [id]);
+
+    if (isLoading) {
+        return (
+            <div className="page-detail" style={{ paddingTop: '100px', textAlign: 'center', minHeight: '60vh', background: '#0f172a', color: '#D4AF37' }}>
+                <div className="spinner" style={{ width: '40px', height: '40px', border: '4px solid rgba(212, 175, 55, 0.3)', borderTop: '4px solid #D4AF37', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' }}></div>
+                <p>Loading insight...</p>
+                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+            </div>
+        );
+    }
 
     if (!insight) {
         return (
@@ -67,11 +54,15 @@ const InsightDetail = () => {
         <div className="page-detail" style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8fafc' }}>
             <SEO
                 title={insight.title}
-                description={DOMPurify.sanitize(insight.content).substring(0, 155)}
+                description={DOMPurify.sanitize(insight.content || '').substring(0, 155)}
                 url={`insights/${id}`}
             />
             <div className="detail-hero" style={{
-                background: 'linear-gradient(135deg, var(--color-blue-dark) 0%, #0f172a 100%)',
+                background: insight.bg_image_url
+                    ? `linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.95)), url(${insight.bg_image_url})`
+                    : 'linear-gradient(135deg, var(--color-blue-dark) 0%, #0f172a 100%)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
                 color: '#fff',
                 padding: '80px 0 60px',
                 textAlign: 'center'
@@ -115,9 +106,14 @@ const InsightDetail = () => {
                     transition={{ delay: 0.2 }}
                     style={{ background: '#fff', padding: '40px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}
                 >
+                    {insight.image_url && (
+                        <div style={{ marginBottom: '40px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.1)' }}>
+                            <img src={insight.image_url} alt={insight.title} style={{ width: '100%', maxHeight: '500px', objectFit: 'cover' }} />
+                        </div>
+                    )}
                     <div
                         className="content-body"
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(insight.content) }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(insight.content || '') }}
                         style={{ lineHeight: '1.8', fontSize: '1.1rem', color: '#334155' }}
                     />
                 </motion.div>
