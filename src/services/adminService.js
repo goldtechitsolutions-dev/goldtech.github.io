@@ -1542,12 +1542,63 @@ const AdminService = {
 
     // --- Company Info ---
     getCompanyInfo: async () => {
-        return AdminService._getData('gt_company_info', initialCompanyInfo);
+        try {
+            const { data, error } = await supabase
+                .from('blogs')
+                .select('content')
+                .eq('slug', 'system-company-profile')
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (data && data.content) {
+                // Parse the JSON stored in the content field
+                const parsedInfo = JSON.parse(data.content);
+                // Also save to local storage as fallback cache
+                AdminService._saveData('gt_company_info', parsedInfo, { silent: true });
+                return parsedInfo;
+            }
+            return AdminService._getData('gt_company_info', initialCompanyInfo);
+        } catch (error) {
+            console.error('Supabase fetch company info error, falling back:', error);
+            return AdminService._getData('gt_company_info', initialCompanyInfo);
+        }
     },
 
     updateCompanyInfo: async (info) => {
-        AdminService._saveData('gt_company_info', info);
-        await AdminService.logAudit('Company Info Updated', 'Admin');
+        try {
+            // Check if system record exists
+            const { data: existingData } = await supabase
+                .from('blogs')
+                .select('id')
+                .eq('slug', 'system-company-profile')
+                .maybeSingle();
+
+            const payload = {
+                title: 'System Component: Company Profile',
+                slug: 'system-company-profile',
+                content: JSON.stringify(info),
+                author: 'System',
+                category: 'Configuration'
+            };
+
+            if (existingData) {
+                await supabase.from('blogs').update(payload).eq('id', existingData.id);
+            } else {
+                await supabase.from('blogs').insert([payload]);
+            }
+
+            // Sync successfully, also update local cache
+            AdminService._saveData('gt_company_info', info);
+            await AdminService.logAudit('Company Info Updated Globally', 'Admin');
+
+        } catch (error) {
+            console.error('Supabase update company info error:', error);
+            // Fallback to local only if network fails
+            AdminService._saveData('gt_company_info', info);
+            await AdminService.logAudit('Company Info Updated Locally (Offline)', 'Admin');
+        }
+
         window.dispatchEvent(new CustomEvent('gt_data_update', { detail: { key: 'gt_company_info' } }));
         return info;
     },
@@ -3066,6 +3117,7 @@ const AdminService = {
             const { data, error } = await supabase
                 .from('blogs')
                 .select('*')
+                .neq('slug', 'system-company-profile') // Hide system configurations
                 .order('created_at', { ascending: false });
             if (error) throw error;
             return data.map(blog => {
@@ -3077,6 +3129,8 @@ const AdminService = {
                             const meta = JSON.parse(match[1]);
                             unpacked.image_url = meta.image_url;
                             unpacked.bg_image_url = meta.bg_image_url;
+                            unpacked.hero_image_url = meta.hero_image_url;
+                            unpacked.hero_content = meta.hero_content;
                             unpacked.content = unpacked.content.replace(match[0], '').trim();
                         } catch (e) { }
                     }
@@ -3092,57 +3146,59 @@ const AdminService = {
         }
     },
     addBlog: async (blog) => {
-        let payload = { ...blog, slug: blog.title.toLowerCase().replace(/ /g, '-') };
-        const meta = { image_url: payload.image_url, bg_image_url: payload.bg_image_url };
-        if (meta.image_url || meta.bg_image_url) {
+        // Explicitly strip any temporary UI fields or file objects
+        const { image_url, bg_image_url, hero_image_url, hero_content, tags, date, thumbnailFile, imageFile, bgImageFile, heroImageFile, ...cleanBlog } = blog;
+
+        // Robust slug generation consistent with Insights.jsx
+        const slug = blog.title.toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+
+        let payload = { ...cleanBlog, slug };
+        payload.title = blog.title; // Ensure title is preserved even if hero_content replaces it visually
+
+        const meta = { image_url, bg_image_url, hero_image_url, hero_content };
+        if (meta.image_url || meta.bg_image_url || meta.hero_image_url || meta.hero_content) {
             payload.content = (payload.content || '') + `\n\n<!-- GTMETA: ${JSON.stringify(meta)} -->`;
         }
-        delete payload.image_url;
-        delete payload.bg_image_url;
 
-        try {
-            const { data, error } = await supabase
-                .from('blogs')
-                .insert([payload])
-                .select();
-            if (error) throw error;
-            return data[0];
-        } catch (error) {
-            const blogs = await AdminService.getBlogs();
-            const newBlog = { ...blog, id: Date.now(), date: new Date().toLocaleDateString(), slug: blog.title.toLowerCase().replace(/ /g, '-') };
-            AdminService._saveData('gt_blogs', [newBlog, ...blogs]);
-            return newBlog;
+        const { data, error } = await supabase
+            .from('blogs')
+            .insert([payload])
+            .select();
+
+        if (error) {
+            console.error('Supabase addBlog error:', error);
+            throw error; // Let the UI handle the error
         }
+        return data[0];
     },
     updateBlog: async (updatedBlog) => {
-        let payload = { ...updatedBlog };
-        const meta = { image_url: payload.image_url, bg_image_url: payload.bg_image_url };
+        // Explicitly strip any temporary UI fields or file objects
+        const { image_url, bg_image_url, hero_image_url, hero_content, tags, date, thumbnailFile, imageFile, bgImageFile, heroImageFile, ...cleanBlog } = updatedBlog;
+        let payload = { ...cleanBlog };
 
         // Strip existing meta if any
         if (payload.content) {
             payload.content = payload.content.replace(/<!-- GTMETA: .*? -->/, '').trim();
         }
 
-        if (meta.image_url || meta.bg_image_url) {
+        const meta = { image_url, bg_image_url, hero_image_url, hero_content };
+        if (meta.image_url || meta.bg_image_url || meta.hero_image_url || meta.hero_content) {
             payload.content = (payload.content || '') + `\n\n<!-- GTMETA: ${JSON.stringify(meta)} -->`;
         }
-        delete payload.image_url;
-        delete payload.bg_image_url;
 
-        try {
-            const { data, error } = await supabase
-                .from('blogs')
-                .update(payload)
-                .eq('id', payload.id)
-                .select();
-            if (error) throw error;
-            return data[0];
-        } catch (error) {
-            const blogs = await AdminService.getBlogs();
-            const newBlogs = blogs.map(b => b.id === updatedBlog.id ? updatedBlog : b);
-            AdminService._saveData('gt_blogs', newBlogs);
-            return updatedBlog;
+        const { data, error } = await supabase
+            .from('blogs')
+            .update(payload)
+            .eq('id', payload.id)
+            .select();
+
+        if (error) {
+            console.error('Supabase updateBlog error:', error);
+            throw error;
         }
+        return data[0];
     },
     deleteBlog: async (id) => {
         try {
@@ -3171,19 +3227,15 @@ const AdminService = {
         }
     },
     addVideo: async (video) => {
-        try {
-            const { data, error } = await supabase
-                .from('videos')
-                .insert([video])
-                .select();
-            if (error) throw error;
-            return data[0];
-        } catch (error) {
-            const videos = await AdminService.getVideos();
-            const newVideo = { ...video, id: Date.now() };
-            AdminService._saveData('gt_videos', [newVideo, ...videos]);
-            return newVideo;
+        const { data, error } = await supabase
+            .from('videos')
+            .insert([video])
+            .select();
+        if (error) {
+            console.error('Supabase addVideo error:', error);
+            throw error;
         }
+        return data[0];
     },
     updateVideo: async (updatedVideo) => {
         try {
@@ -3210,6 +3262,29 @@ const AdminService = {
             const videos = await AdminService.getVideos();
             AdminService._saveData('gt_videos', videos.filter(v => v.id !== id));
             return true;
+        }
+    },
+
+    uploadFile: async (file, bucket = 'blog-assets') => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        try {
+            const { data, error } = await supabase.storage
+                .from(bucket)
+                .upload(filePath, file);
+
+            if (error) throw error;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from(bucket)
+                .getPublicUrl(filePath);
+
+            return publicUrl;
+        } catch (error) {
+            console.error('Error uploading file:', error);
+            throw error;
         }
     },
 };

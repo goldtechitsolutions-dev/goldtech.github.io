@@ -6,6 +6,19 @@ import modernOffice from '../assets/modern-office.png';
 import SEO from './SEO';
 import AdminService from '../services/adminService';
 
+const getYouTubeEmbedUrl = (url) => {
+    if (!url) return '';
+    // Enhanced regex to extract ID from various YT formats including shorts and youtu.be
+    const regExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(regExp);
+    const videoId = match ? match[1] : null;
+
+    if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&origin=${window.location.origin}`;
+    }
+    return url;
+};
+
 const Insights = () => {
     const [blogs, setBlogs] = useState([]);
     const [videos, setVideos] = useState([]);
@@ -162,10 +175,11 @@ const Insights = () => {
                                             <iframe
                                                 width="100%"
                                                 height="100%"
-                                                src={video.video_url.replace('watch?v=', 'embed/')}
+                                                src={getYouTubeEmbedUrl(video.video_url)}
                                                 title={video.title}
                                                 frameBorder="0"
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                referrerPolicy="strict-origin-when-cross-origin"
                                                 allowFullScreen
                                                 style={{ border: 'none' }}
                                             ></iframe>

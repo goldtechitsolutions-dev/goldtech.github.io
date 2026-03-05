@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import {
     LayoutDashboard, Users, FileText, Settings, LogOut,
     Plus, Search, Bell, Menu, X, Filter, Download,
@@ -9,12 +11,36 @@ import {
     DollarSign, Briefcase, Calendar, Clock, Lock,
     Shield, Key, Eye, EyeOff, Copy, RefreshCw, Hash,
     MessageSquare, BarChart2, User, Trash2, Edit, Activity, Server, HardDrive, BarChart3, Video, Building, Globe, AlertTriangle, FileCheck, Mail, Phone, Microscope,
-    Cloud, Code, ClipboardList, Zap, UserPlus, Reply, ShieldCheck, ShieldAlert
+    Cloud, Code, ClipboardList, Zap, UserPlus, Reply, ShieldCheck, ShieldAlert, Crop
 } from 'lucide-react';
+
+const QUILL_MODULES = {
+    toolbar: [
+        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+        [{ 'font': [] }],
+        [{ 'size': ['small', false, 'large', 'huge'] }],
+        ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        ['link', 'image'],
+        ['clean'],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'align': [] }],
+    ],
+};
+
+const QUILL_FORMATS = [
+    'header', 'font', 'size',
+    'bold', 'italic', 'underline', 'strike', 'blockquote',
+    'list', 'bullet',
+    'link', 'image',
+    'color', 'background',
+    'align'
+];
 
 import logo from '../assets/logo-transparent.png';
 
 import AdminService from '../services/adminService';
+import CropModal from './CropModal';
 import {
     LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell
 } from 'recharts';
@@ -192,6 +218,15 @@ const Admin = ({ currentUser }) => {
     const [modalType, setModalType] = useState(null); // 'application', 'query', 'meeting', 'upsert_user', 'upsert_credential', 'chat_transcript'
     const [modalError, setModalError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Cropping State
+    const [cropModal, setCropModal] = useState({
+        isOpen: false,
+        image: null,
+        aspect: 16 / 9,
+        type: '', // 'thumbnail_url', 'image_url', 'bg_image_url'
+        title: ''
+    });
 
     // Password Vault State
     const [visiblePasswords, setVisiblePasswords] = useState({});
@@ -795,26 +830,122 @@ const Admin = ({ currentUser }) => {
         setFormData(blog || { title: '', content: '', category: 'Technology', author: 'Admin', thumbnail_url: '', tags: [] });
     };
 
+    const handleFileSelect = (e, type) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            let aspect = 16 / 9;
+            let title = 'Crop Image';
+
+            if (type === 'thumbnail_url') {
+                aspect = 1.91 / 1;
+                title = 'Crop Thumbnail (Social Optimization)';
+            } else if (type === 'bg_image_url') {
+                aspect = 21 / 9;
+                title = 'Crop Background (Panoramic View)';
+            } else if (type === 'hero_image_url') {
+                aspect = 21 / 9;
+                title = 'Crop Hero Background (Main Header)';
+            } else {
+                aspect = 16 / 9;
+                title = 'Crop Inline Image';
+            }
+
+            setCropModal({
+                isOpen: true,
+                image: reader.result,
+                aspect,
+                type,
+                title
+            });
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleManualCrop = (type) => {
+        const currentImage = formData[type] || (type === 'thumbnail_url' && formData.thumbnailFile ? URL.createObjectURL(formData.thumbnailFile) : null);
+        if (!currentImage) return;
+
+        let aspect = 16 / 9;
+        let title = 'Crop Image';
+
+        if (type === 'thumbnail_url') {
+            aspect = 1.91 / 1;
+            title = 'Crop Thumbnail (Social Optimization)';
+        } else if (type === 'bg_image_url') {
+            aspect = 21 / 9;
+            title = 'Crop Background (Panoramic View)';
+        } else if (type === 'hero_image_url') {
+            aspect = 21 / 9;
+            title = 'Crop Hero Background (Main Header)';
+        } else {
+            aspect = 16 / 9;
+            title = 'Crop Inline Image';
+        }
+
+        setCropModal({
+            isOpen: true,
+            image: currentImage,
+            aspect,
+            type,
+            title
+        });
+    };
+
+    const onCropComplete = async (croppedBlob) => {
+        const file = new File([croppedBlob], `${cropModal.type}_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        setCropModal({ ...cropModal, isOpen: false });
+
+        try {
+            const publicUrl = await AdminService.uploadFile(file, 'blog-assets');
+            setFormData({ ...formData, [cropModal.type]: publicUrl });
+        } catch (error) {
+            console.error("Upload failed after crop:", error);
+            setModalError("Failed to upload cropped image. Please try again.");
+        }
+    };
+
     const handleBlogSubmit = async (e) => {
         e.preventDefault();
         setModalError('');
         setIsSubmitting(true);
         try {
+            const finalData = { ...formData };
+
+            // Handle file uploads to blog-assets
+            if (formData.thumbnailFile) {
+                finalData.thumbnail_url = await AdminService.uploadFile(formData.thumbnailFile, 'blog-assets');
+                delete finalData.thumbnailFile;
+            }
+            if (formData.imageFile) {
+                finalData.image_url = await AdminService.uploadFile(formData.imageFile, 'blog-assets');
+                delete finalData.imageFile;
+            }
+            if (formData.bgImageFile) {
+                finalData.bg_image_url = await AdminService.uploadFile(formData.bgImageFile, 'blog-assets');
+                delete finalData.bgImageFile;
+            }
+            if (formData.heroImageFile) {
+                finalData.hero_image_url = await AdminService.uploadFile(formData.heroImageFile, 'blog-assets');
+                delete finalData.heroImageFile;
+            }
+
             if (selectedItem && selectedItem.id) {
-                await AdminService.updateBlog({ ...selectedItem, ...formData });
+                await AdminService.updateBlog({ ...selectedItem, ...finalData });
             } else {
-                await AdminService.addBlog(formData);
+                await AdminService.addBlog(finalData);
             }
             await refreshData();
             closeModal();
         } catch (err) {
-            setModalError('Failed to save blog post.');
+            setModalError('Failed to save blog post: ' + (err.message || 'Unknown error'));
             console.error(err);
         } finally {
             setIsSubmitting(false);
         }
     };
-
     const handleOpenVideoModal = (video = null) => {
         setSelectedItem(video);
         setModalType('upsert_video');
@@ -826,15 +957,23 @@ const Admin = ({ currentUser }) => {
         setModalError('');
         setIsSubmitting(true);
         try {
+            const finalData = { ...formData };
+
+            // Handle thumbnail file upload to video-assets
+            if (formData.thumbnailFile) {
+                finalData.thumbnail_url = await AdminService.uploadFile(formData.thumbnailFile, 'video-assets');
+                delete finalData.thumbnailFile;
+            }
+
             if (selectedItem && selectedItem.id) {
-                await AdminService.updateVideo({ ...selectedItem, ...formData });
+                await AdminService.updateVideo({ ...selectedItem, ...finalData });
             } else {
-                await AdminService.addVideo(formData);
+                await AdminService.addVideo(finalData);
             }
             await refreshData();
             closeModal();
         } catch (err) {
-            setModalError('Failed to save video.');
+            setModalError('Failed to save video: ' + (err.message || 'Unknown error'));
             console.error(err);
         } finally {
             setIsSubmitting(false);
@@ -2887,8 +3026,6 @@ const Admin = ({ currentUser }) => {
                                                 <th style={{ padding: '16px 30px', color: '#94a3b8', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Session ID</th>
                                                 <th style={{ padding: '16px 30px', color: '#94a3b8', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>User</th>
                                                 <th style={{ padding: '16px 30px', color: '#94a3b8', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contact</th>
-                                                <th style={{ padding: '16px 30px', color: '#94a3b8', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
-                                                <th style={{ padding: '16px 30px', color: '#94a3b8', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Duration</th>
                                                 <th style={{ padding: '16px 30px', color: '#94a3b8', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Timestamp</th>
                                                 <th style={{ padding: '16px 30px', color: '#94a3b8', fontWeight: '600', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Actions</th>
                                             </tr>
@@ -2953,16 +3090,6 @@ const Admin = ({ currentUser }) => {
                                                             </div>
                                                         </td>
                                                         <td style={{ padding: '16px 30px' }}>
-                                                            <span className={log.status === 'New' ? "status-pulse-gold" : ""} style={statusBadge(log.status)}>
-                                                                {log.status === 'New' ? '● New Interaction' : log.status}
-                                                            </span>
-                                                        </td>
-                                                        <td style={{ padding: '16px 30px' }}>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#94a3b8', fontSize: '0.85rem' }}>
-                                                                <Clock size={14} /> {log.duration}
-                                                            </div>
-                                                        </td>
-                                                        <td style={{ padding: '16px 30px' }}>
                                                             <div style={{ color: '#f8fafc', fontSize: '0.85rem', fontWeight: '500' }}>{log.date}</div>
                                                             <div style={{ color: '#64748b', fontSize: '0.75rem' }}>{log.time}</div>
                                                         </td>
@@ -2985,7 +3112,7 @@ const Admin = ({ currentUser }) => {
                                                 ))
                                             ) : (
                                                 <tr>
-                                                    <td colSpan="7" style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+                                                    <td colSpan="5" style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
                                                         No chat logs found.
                                                     </td>
                                                 </tr>
@@ -3753,6 +3880,50 @@ const Admin = ({ currentUser }) => {
                                                     />
                                                 </div>
 
+                                                <div>
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Hero Content (Main Header Typography)</label>
+                                                    <div className="quill-wrapper" style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.1)', overflow: 'hidden' }}>
+                                                        <ReactQuill
+                                                            theme="snow"
+                                                            value={formData.hero_content || (formData.title ? `<h1>${formData.title}</h1>` : '')}
+                                                            onChange={(val) => setFormData({ ...formData, hero_content: val })}
+                                                            modules={QUILL_MODULES}
+                                                            formats={QUILL_FORMATS}
+                                                            style={{ height: '150px', color: '#fff' }}
+                                                        />
+                                                    </div>
+                                                    <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '4px', fontStyle: 'italic' }}>Tip: Use different fonts, sizes, and colors here to make your hero section "stunning".</div>
+                                                </div>
+
+                                                <div>
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Hero Background Image (Full Width)</label>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                        {(formData.hero_image_url || formData.heroImageFile) && (
+                                                            <div style={{ position: 'relative', width: '100%' }}>
+                                                                <img
+                                                                    src={formData.heroImageFile ? URL.createObjectURL(formData.heroImageFile) : formData.hero_image_url}
+                                                                    alt="Hero Preview"
+                                                                    style={{ width: '100%', height: '120px', borderRadius: '8px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }}
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleManualCrop('hero_image_url')}
+                                                                    style={{ position: 'absolute', top: '10px', right: '10px', background: '#D4AF37', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 10px rgba(0,0,0,0.5)' }}
+                                                                    title="Crop current hero image"
+                                                                >
+                                                                    <Crop size={18} color="#000" />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            onChange={(e) => handleFileSelect(e, 'hero_image_url')}
+                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                        />
+                                                    </div>
+                                                </div>
+
                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                                                     <div>
                                                         <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Thematic Category</label>
@@ -3780,51 +3951,125 @@ const Admin = ({ currentUser }) => {
                                                     </div>
                                                 </div>
 
-                                                <div>
-                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Visual Thumbnail (URL)</label>
-                                                    <input
-                                                        type="url"
-                                                        value={formData.thumbnail_url || ''}
-                                                        onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
-                                                        placeholder="https://images.unsplash.com/..."
-                                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
-                                                    />
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
+                                                    <div>
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Visual Thumbnail</label>
+                                                        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                                                            {(formData.thumbnail_url || formData.thumbnailFile) && (
+                                                                <div style={{ position: 'relative' }}>
+                                                                    <img
+                                                                        src={formData.thumbnailFile ? URL.createObjectURL(formData.thumbnailFile) : formData.thumbnail_url}
+                                                                        alt="Thumbnail Preview"
+                                                                        style={{ width: '60px', height: '60px', borderRadius: '8px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }}
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleManualCrop('thumbnail_url')}
+                                                                        style={{ position: 'absolute', bottom: '-5px', right: '-5px', background: '#D4AF37', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
+                                                                        title="Crop current image"
+                                                                    >
+                                                                        <Crop size={14} color="#000" />
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                            <div style={{ flex: 1, position: 'relative' }}>
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    onChange={(e) => handleFileSelect(e, 'thumbnail_url')}
+                                                                    style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                                />
+                                                                <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '4px' }}>Recommended: 1200x630px</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
 
                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                                                     <div>
-                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Inline Image (URL)</label>
-                                                        <input
-                                                            type="url"
-                                                            value={formData.image_url || ''}
-                                                            onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                                                            placeholder="https://images.unsplash.com/..."
-                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
-                                                        />
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Inline Image</label>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                            {(formData.image_url || formData.imageFile) && (
+                                                                <div style={{ position: 'relative', width: '100%' }}>
+                                                                    <img
+                                                                        src={formData.imageFile ? URL.createObjectURL(formData.imageFile) : formData.image_url}
+                                                                        alt="Inline Preview"
+                                                                        style={{ width: '100%', height: '100px', borderRadius: '8px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }}
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleManualCrop('image_url')}
+                                                                        style={{ position: 'absolute', top: '10px', right: '10px', background: '#D4AF37', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 10px rgba(0,0,0,0.5)' }}
+                                                                        title="Crop current image"
+                                                                    >
+                                                                        <Crop size={18} color="#000" />
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                onChange={(e) => handleFileSelect(e, 'image_url')}
+                                                                style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            />
+                                                        </div>
                                                     </div>
                                                     <div>
-                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Background Image (URL)</label>
-                                                        <input
-                                                            type="url"
-                                                            value={formData.bg_image_url || ''}
-                                                            onChange={(e) => setFormData({ ...formData, bg_image_url: e.target.value })}
-                                                            placeholder="https://images.unsplash.com/..."
-                                                            style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
-                                                        />
+                                                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Background Image</label>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                            {(formData.bg_image_url || formData.bgImageFile) && (
+                                                                <div style={{ position: 'relative', width: '100%' }}>
+                                                                    <img
+                                                                        src={formData.bgImageFile ? URL.createObjectURL(formData.bgImageFile) : formData.bg_image_url}
+                                                                        alt="BG Preview"
+                                                                        style={{ width: '100%', height: '100px', borderRadius: '8px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }}
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleManualCrop('bg_image_url')}
+                                                                        style={{ position: 'absolute', top: '10px', right: '10px', background: '#D4AF37', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 10px rgba(0,0,0,0.5)' }}
+                                                                        title="Crop current image"
+                                                                    >
+                                                                        <Crop size={18} color="#000" />
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                onChange={(e) => handleFileSelect(e, 'bg_image_url')}
+                                                                style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
 
-                                                <div>
-                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Insight Content (Markdown/Raw Text)</label>
-                                                    <textarea
+                                                <div className="rich-editor-wrapper">
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Insight Content (Rich Text)</label>
+                                                    <ReactQuill
+                                                        theme="snow"
                                                         value={formData.content || ''}
-                                                        onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                                                        style={{ width: '100%', height: '200px', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff', resize: 'vertical' }}
-                                                        placeholder="Type or paste the blog content here..."
-                                                        required
+                                                        onChange={(content) => setFormData({ ...formData, content })}
+                                                        modules={QUILL_MODULES}
+                                                        formats={QUILL_FORMATS}
+                                                        style={{ height: '300px', marginBottom: '50px' }}
+                                                        placeholder="Draft your immersive insight here..."
                                                     />
+                                                    <style>{`
+                                                        .rich-editor-wrapper .ql-container { background: rgba(0,0,0,0.2); border: 1px solid rgba(255, 255, 255, 0.1) !important; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; color: #fff; font-family: inherit; }
+                                                        .rich-editor-wrapper .ql-toolbar { background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1) !important; border-top-left-radius: 10px; border-top-right-radius: 10px; }
+                                                        .rich-editor-wrapper .ql-stroke { stroke: #94a3b8 !important; }
+                                                        .rich-editor-wrapper .ql-fill { fill: #94a3b8 !important; }
+                                                        .rich-editor-wrapper .ql-picker { color: #94a3b8 !important; }
+                                                        .rich-editor-wrapper .ql-picker-options { background-color: #1e293b !important; border-color: rgba(255,255,255,0.1) !important; }
+                                                    `}</style>
                                                 </div>
 
+                                                {modalError && (
+                                                    <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '10px', color: '#ef4444', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                                        <AlertCircle size={16} /> {modalError}
+                                                    </div>
+                                                )}
                                                 <button
                                                     type="submit"
                                                     disabled={isSubmitting}
@@ -3889,13 +4134,24 @@ const Admin = ({ currentUser }) => {
                                                 </div>
 
                                                 <div>
-                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Asset Thumbnail (URL)</label>
-                                                    <input
-                                                        type="url"
-                                                        value={formData.thumbnail_url || ''}
-                                                        onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
-                                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
-                                                    />
+                                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Asset Thumbnail</label>
+                                                    <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                                                        {(formData.thumbnail_url || formData.thumbnailFile) && (
+                                                            <img
+                                                                src={formData.thumbnailFile ? URL.createObjectURL(formData.thumbnailFile) : formData.thumbnail_url}
+                                                                alt="Thumbnail Preview"
+                                                                style={{ width: '60px', height: '60px', borderRadius: '8px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }}
+                                                            />
+                                                        )}
+                                                        <div style={{ flex: 1 }}>
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                onChange={(e) => handleFileSelect(e, 'thumbnail_url')}
+                                                                style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: '#fff' }}
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
 
                                                 <div>
@@ -3908,6 +4164,11 @@ const Admin = ({ currentUser }) => {
                                                     />
                                                 </div>
 
+                                                {modalError && (
+                                                    <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '10px', color: '#ef4444', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                                        <AlertCircle size={16} /> {modalError}
+                                                    </div>
+                                                )}
                                                 <button
                                                     type="submit"
                                                     disabled={isSubmitting}
@@ -5459,6 +5720,15 @@ const Admin = ({ currentUser }) => {
                     </div>
                 )
             }
+
+            <CropModal
+                isOpen={cropModal.isOpen}
+                image={cropModal.image}
+                aspect={cropModal.aspect}
+                title={cropModal.title}
+                onCancel={() => setCropModal({ ...cropModal, isOpen: false })}
+                onCropComplete={onCropComplete}
+            />
         </div>
     );
 };

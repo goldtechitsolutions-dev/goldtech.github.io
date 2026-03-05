@@ -39,10 +39,21 @@ const Footer = () => {
 
                     <div className="footer-contact footer-column">
                         <h4>Contact Us</h4>
-                        <ul className="contact-info">
-                            <li><span style={{ opacity: companyInfo.footerOpacity !== undefined ? companyInfo.footerOpacity : 1 }}>📍 {companyInfo.address || 'Address not configured'}</span></li>
-                            <li>📧 {companyInfo.email || 'Email not configured'}</li>
-                            <li>📞 {companyInfo.phone || 'Phone not configured'}</li>
+                        <ul className="contact-info" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                            <li style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '10px' }}>
+                                <span>📍</span>
+                                <span style={{ opacity: companyInfo.footerOpacity !== undefined ? companyInfo.footerOpacity : 1, lineHeight: '1.4' }}>
+                                    {companyInfo.address || 'Address not configured'}
+                                </span>
+                            </li>
+                            <li style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                                <span>📧</span>
+                                <span>{companyInfo.email || 'Email not configured'}</span>
+                            </li>
+                            <li style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                                <span>📞</span>
+                                <span>{companyInfo.phone || 'Phone not configured'}</span>
+                            </li>
                         </ul>
                     </div>
 
