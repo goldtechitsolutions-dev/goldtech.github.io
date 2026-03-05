@@ -128,7 +128,7 @@ const Career = () => {
                 <div style={{
                     background: 'var(--color-blue-dark)',
                     borderRadius: '20px',
-                    padding: '60px',
+                    padding: 'clamp(30px, 5vw, 60px)',
                     color: '#fff',
                     display: 'flex',
                     flexDirection: 'column',
@@ -147,7 +147,7 @@ const Career = () => {
                         <div style={{ marginBottom: '20px', display: 'inline-block', background: 'rgba(212, 175, 55, 0.1)', padding: '5px 15px', borderRadius: '20px', border: '1px solid rgba(212, 175, 55, 0.3)', color: '#D4AF37', fontWeight: 'bold' }}>
                             CAREERS AT GOLDTECH
                         </div>
-                        <h2 className="career-hero-title" style={{ fontSize: '3.5rem', marginBottom: '1.5rem', color: '#fff', lineHeight: '1.2' }}>
+                        <h2 className="career-hero-title" style={{ fontSize: 'clamp(2rem, 8vw, 3.5rem)', marginBottom: '1.5rem', color: '#fff', lineHeight: '1.2' }}>
                             Building the <span style={{ color: '#D4AF37' }}>Gold Standard</span> of<br /> Fintech Infrastructure.
                         </h2>
                         <p style={{ maxWidth: '700px', margin: '0 auto 2.5rem auto', color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem' }}>
@@ -178,7 +178,7 @@ const Career = () => {
                         {/* Tech Stack Ticker */}
                         <div style={{ marginBottom: '60px', overflow: 'hidden', width: '100%', maxWidth: '900px', margin: '0 auto 60px auto' }}>
                             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', marginBottom: '20px', letterSpacing: '1px' }}>POWERED BY MODERN TECH</p>
-                            <div className="career-ticker" style={{ display: 'flex', justifyContent: 'center', gap: '40px', color: 'rgba(255,255,255,0.7)' }}>
+                            <div className="career-ticker" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '40px', color: 'rgba(255,255,255,0.7)' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}><Code size={28} color="#61DAFB" /><span style={{ fontSize: '0.8rem' }}>React</span></div>
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}><Cpu size={28} color="#fff" /><span style={{ fontSize: '0.8rem' }}>Next.js</span></div>
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}><Database size={28} color="#00C7B7" /><span style={{ fontSize: '0.8rem' }}>MongoDB</span></div>
@@ -193,7 +193,7 @@ const Career = () => {
                         {/* Life at GoldTech Section - Enhanced */}
                         <div style={{ marginBottom: '80px', width: '100%', maxWidth: '1000px', margin: '0 auto 80px auto', textAlign: 'center' }}>
                             <h3 style={{ color: '#fff', marginBottom: '40px', fontSize: '2rem' }}>Why You'll Love It Here</h3>
-                            <div className="career-benefits-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+                            <div className="career-benefits-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '20px' }}>
                                 <div style={{ background: 'rgba(255,255,255,0.05)', padding: '30px', borderRadius: '15px', border: '1px solid rgba(255,255,255,0.1)' }}>
                                     <h4 style={{ margin: '0 0 10px 0', color: '#D4AF37', fontSize: '1.2rem' }}>Flexible & Remote</h4>
                                     <p style={{ margin: 0, fontSize: '0.95rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5' }}>Work from where you feel most productive. We are a remote-first company with global hubs.</p>
@@ -213,7 +213,7 @@ const Career = () => {
                     {/* Job Search & Filter */}
                     {!showForm && (
                         <div style={{ marginBottom: '30px', width: '100%', maxWidth: '800px', background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px' }}>
-                            <div className="career-filter-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '10px' }}>
+                            <div className="career-filter-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '10px' }}>
                                 <input
                                     type="text"
                                     placeholder="Search by role..."
@@ -247,7 +247,7 @@ const Career = () => {
                     {/* Active Openings Preview */}
                     {!showForm && (
                         <div style={{ marginBottom: '50px', width: '100%', maxWidth: '1000px', margin: '0 auto' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
                                 {filteredJobs.map(job => (
                                     <div key={job.id} style={{
                                         background: 'rgba(255,255,255,0.05)',
@@ -341,7 +341,7 @@ const Career = () => {
                                 backdropFilter: 'blur(30px) saturate(180%)',
                                 width: '100%', maxWidth: '750px',
                                 borderRadius: '32px',
-                                padding: '40px',
+                                padding: 'clamp(20px, 5vw, 40px)',
                                 maxHeight: '90vh',
                                 overflowY: 'auto',
                                 position: 'relative',
@@ -365,7 +365,7 @@ const Career = () => {
                             <h2 style={{ margin: '0 0 10px 0', color: '#D4AF37', fontSize: '2rem' }}>{selectedJob.title}</h2>
                             <p style={{ margin: '0 0 25px 0', color: '#94a3b8', fontSize: '1.1rem' }}>{selectedJob.location} • {selectedJob.type} • {selectedJob.department}</p>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '30px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '15px', marginBottom: '30px' }}>
                                 <div style={{ background: 'rgba(255,255,255,0.08)', padding: '15px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)' }}>
                                     <div style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '5px' }}>Experience Required</div>
                                     <div style={{ fontWeight: '600', color: '#fff' }}>{selectedJob.experience || 'Not Specified'}</div>
@@ -440,7 +440,7 @@ const Career = () => {
                                 backdropFilter: 'blur(30px) saturate(180%)',
                                 width: '100%', maxWidth: '750px',
                                 borderRadius: '32px',
-                                padding: '40px',
+                                padding: 'clamp(20px, 5vw, 40px)',
                                 maxHeight: '90vh',
                                 overflowY: 'auto',
                                 position: 'relative',
@@ -469,11 +469,11 @@ const Career = () => {
                             <form onSubmit={submitForm} style={{ display: 'grid', gap: '20px' }}>
 
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px' }}>
                                     <input name="name" type="text" placeholder="Full Name *" required style={{ padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.08)', color: '#fff', backdropFilter: 'blur(5px)', transition: '0.3s' }} />
                                     <input name="email" type="email" placeholder="Email Address *" required style={{ padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.08)', color: '#fff', backdropFilter: 'blur(5px)', transition: '0.3s' }} />
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px' }}>
                                     <input name="phone" type="text" placeholder="Phone Number *" required style={{ padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.08)', color: '#fff', backdropFilter: 'blur(5px)', transition: '0.3s' }} />
                                     <div style={{ position: 'relative' }}>
                                         <select
@@ -493,14 +493,14 @@ const Career = () => {
                                 </div>
 
                                 {experienceLvl === 'Experienced' && (
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '20px' }}>
                                         <input name="experience" type="number" placeholder="Years of Experience *" required style={{ padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.08)', color: '#fff', backdropFilter: 'blur(5px)', transition: '0.3s' }} />
                                         <input name="currentCompany" type="text" placeholder="Current Company" style={{ padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.08)', color: '#fff', backdropFilter: 'blur(5px)', transition: '0.3s' }} />
                                         <input name="noticePeriod" type="number" placeholder="Notice Period (Days)" style={{ padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.08)', color: '#fff', backdropFilter: 'blur(5px)', transition: '0.3s' }} />
                                     </div>
                                 )}
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px' }}>
                                     <input name="linkedin" type="text" placeholder="LinkedIn Profile URL" style={{ padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.08)', color: '#fff', backdropFilter: 'blur(5px)', transition: '0.3s' }} />
                                     <input name="portfolio" type="text" placeholder="Portfolio/GitHub URL" style={{ padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.08)', color: '#fff', backdropFilter: 'blur(5px)', transition: '0.3s' }} />
                                 </div>
