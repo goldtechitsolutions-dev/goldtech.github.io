@@ -135,6 +135,14 @@ const Admin = ({ currentUser }) => {
     });
     const [meetingSort, setMeetingSort] = useState({ key: 'date', direction: 'desc' });
 
+    // Leads Filter & Sort State
+    const [leadFilters, setLeadFilters] = useState({
+        search: '',
+        status: 'All'
+    });
+    const [leadSort, setLeadSort] = useState({ key: 'date', direction: 'desc' });
+
+
 
     const processedCandidates = useMemo(() => {
         let result = [...candidates];
@@ -311,6 +319,42 @@ const Admin = ({ currentUser }) => {
 
         return result;
     }, [meetings, meetingFilters, meetingSort]);
+
+    const filteredLeads = useMemo(() => {
+        let result = [...leads];
+
+        // Filtering
+        if (leadFilters.search) {
+            const query = leadFilters.search.toLowerCase();
+            result = result.filter(l =>
+                (l.name && typeof l.name === 'string' && l.name.toLowerCase().includes(query)) ||
+                (l.email && typeof l.email === 'string' && l.email.toLowerCase().includes(query)) ||
+                (l.message && typeof l.message === 'string' && l.message.toLowerCase().includes(query)) ||
+                (l.subject && typeof l.subject === 'string' && l.subject.toLowerCase().includes(query))
+            );
+        }
+
+        if (leadFilters.status !== 'All') {
+            result = result.filter(l => l.status === leadFilters.status);
+        }
+
+        // Sorting
+        result.sort((a, b) => {
+            if (leadSort.key === 'date') {
+                const dateA = new Date(`${a.date || '1970-01-01'} ${a.time || '00:00:00'}`).getTime();
+                const dateB = new Date(`${b.date || '1970-01-01'} ${b.time || '00:00:00'}`).getTime();
+                return leadSort.direction === 'asc' ? dateA - dateB : dateB - dateA;
+            } else {
+                const valA = a[leadSort.key]?.toString().toLowerCase() || '';
+                const valB = b[leadSort.key]?.toString().toLowerCase() || '';
+                if (valA < valB) return leadSort.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return leadSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            }
+        });
+
+        return result;
+    }, [leads, leadFilters, leadSort]);
 
     useEffect(() => {
         if (isLoggedIn) {
@@ -1949,9 +1993,70 @@ const Admin = ({ currentUser }) => {
 
                 {activeTab === 'leads' && (
                     <div style={cardStyle}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-                            <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800' }}>Sales Intelligence</h3>
-                            <button onClick={refreshData} style={{ background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.2)', color: '#D4AF37', padding: '10px 20px', borderRadius: '10px', fontWeight: '800', cursor: 'pointer' }}>Update Funnel</button>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
+                            <h3 style={{ margin: 0, color: '#fff', fontSize: '1.2rem', fontWeight: '800' }}>Sales Intelligence</h3>
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        type="text"
+                                        placeholder="Search leads..."
+                                        value={leadFilters.search}
+                                        onChange={(e) => setLeadFilters({ ...leadFilters, search: e.target.value })}
+                                        style={{
+                                            padding: '8px 12px 8px 30px',
+                                            borderRadius: '8px',
+                                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                                            background: 'rgba(0,0,0,0.2)',
+                                            color: '#fff',
+                                            fontSize: '0.8rem',
+                                            width: '200px'
+                                        }}
+                                    />
+                                    <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                                </div>
+
+                                <select
+                                    value={leadFilters.status}
+                                    onChange={(e) => setLeadFilters({ ...leadFilters, status: e.target.value })}
+                                    style={{
+                                        padding: '8px 12px',
+                                        borderRadius: '8px',
+                                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                                        background: 'rgba(0,0,0,0.2)',
+                                        color: '#fff',
+                                        fontSize: '0.8rem',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    <option value="All">All Statuses</option>
+                                    <option value="New">New / Priority Target</option>
+                                    <option value="Active">Active</option>
+                                    <option value="Closed">Closed</option>
+                                    <option value="Converted">Converted</option>
+                                </select>
+
+                                <select
+                                    value={leadSort.direction}
+                                    onChange={(e) => setLeadSort({ ...leadSort, direction: e.target.value })}
+                                    style={{
+                                        padding: '8px 12px',
+                                        borderRadius: '8px',
+                                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                                        background: 'rgba(0,0,0,0.2)',
+                                        color: '#fff',
+                                        fontSize: '0.8rem',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    <option value="desc">Newest First</option>
+                                    <option value="asc">Oldest First</option>
+                                </select>
+
+                                <button onClick={refreshData} style={{ background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.3)', color: '#D4AF37', padding: '8px 16px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', fontSize: '0.8rem' }}>
+                                    <RefreshCw size={14} className={isRefreshing ? "spin-icon" : ""} style={{ marginRight: '8px', ...(isRefreshing ? { animation: 'spin 1s linear infinite' } : {}) }} />
+                                    {isRefreshing ? 'UPDATE...' : 'UPDATE FUNNEL'}
+                                </button>
+                            </div>
                         </div>
                         <div style={{ overflowX: 'auto', paddingBottom: '10px' }} className="custom-scrollbar">
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -1966,52 +2071,60 @@ const Admin = ({ currentUser }) => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {leads.map((q) => (
-                                        <tr key={q.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
-                                            <td style={tdStyle}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <div style={{ fontWeight: '700', color: '#fff' }}>{q.name}</div>
-                                                    {q._isLocal && (
-                                                        <span style={{ fontSize: '0.65rem', background: 'rgba(212, 175, 55, 0.15)', color: '#D4AF37', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(212, 175, 55, 0.3)' }}>LOCAL ONLY</span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td style={tdStyle}>
-                                                <div style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        {q.email}
-                                                        <button
-                                                            onClick={() => { copyToClipboard(q.email); setCopiedId(`${q.id}-email`); setTimeout(() => setCopiedId(null), 2000); }}
-                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: copiedId === `${q.id}-email` ? '#10b981' : '#64748b', display: 'flex' }}
-                                                            title="Copy Email"
-                                                        >
-                                                            {copiedId === `${q.id}-email` ? <Check size={12} /> : <Copy size={12} />}
-                                                        </button>
+                                    {filteredLeads.length > 0 ? (
+                                        filteredLeads.map((q) => (
+                                            <tr key={q.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
+                                                <td style={tdStyle}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <div style={{ fontWeight: '700', color: '#fff' }}>{q.name}</div>
+                                                        {q._isLocal && (
+                                                            <span style={{ fontSize: '0.65rem', background: 'rgba(212, 175, 55, 0.15)', color: '#D4AF37', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(212, 175, 55, 0.3)' }}>LOCAL ONLY</span>
+                                                        )}
                                                     </div>
-                                                    {q.phone && (
+                                                </td>
+                                                <td style={tdStyle}>
+                                                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                            {q.phone}
+                                                            {q.email}
                                                             <button
-                                                                onClick={() => { copyToClipboard(q.phone); setCopiedId(`${q.id}-phone`); setTimeout(() => setCopiedId(null), 2000); }}
-                                                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: copiedId === `${q.id}-phone` ? '#10b981' : '#64748b', display: 'flex' }}
-                                                                title="Copy Phone Number"
+                                                                onClick={() => { copyToClipboard(q.email); setCopiedId(`${q.id}-email`); setTimeout(() => setCopiedId(null), 2000); }}
+                                                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: copiedId === `${q.id}-email` ? '#10b981' : '#64748b', display: 'flex' }}
+                                                                title="Copy Email"
                                                             >
-                                                                {copiedId === `${q.id}-phone` ? <Check size={12} /> : <Copy size={12} />}
+                                                                {copiedId === `${q.id}-email` ? <Check size={12} /> : <Copy size={12} />}
                                                             </button>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td style={tdStyle}>
-                                                <span style={{ color: '#cbd5e1', fontSize: '0.9rem' }}>{q.message || q.subject}</span>
-                                            </td>
-                                            <td style={tdStyle}><span style={statusBadge(q.status)}>{q.status === 'New' ? 'Priority Target' : q.status}</span></td>
-                                            <td style={{ ...tdStyle, color: '#94a3b8', fontSize: '0.85rem' }}>{q.date}</td>
-                                            <td style={{ ...tdStyle, textAlign: 'right' }}>
-                                                <button onClick={() => handleViewItem(q, 'query')} style={{ color: '#000', background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)', border: 'none', cursor: 'pointer', fontWeight: '800', padding: '8px 16px', borderRadius: '8px' }}>Initiate Contact</button>
+                                                        {q.phone && (
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                {q.phone}
+                                                                <button
+                                                                    onClick={() => { copyToClipboard(q.phone); setCopiedId(`${q.id}-phone`); setTimeout(() => setCopiedId(null), 2000); }}
+                                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: copiedId === `${q.id}-phone` ? '#10b981' : '#64748b', display: 'flex' }}
+                                                                    title="Copy Phone Number"
+                                                                >
+                                                                    {copiedId === `${q.id}-phone` ? <Check size={12} /> : <Copy size={12} />}
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td style={tdStyle}>
+                                                    <span style={{ color: '#cbd5e1', fontSize: '0.9rem' }}>{q.message || q.subject}</span>
+                                                </td>
+                                                <td style={tdStyle}><span style={statusBadge(q.status)}>{q.status === 'New' ? 'Priority Target' : q.status}</span></td>
+                                                <td style={{ ...tdStyle, color: '#94a3b8', fontSize: '0.85rem' }}>{q.date}</td>
+                                                <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                                    <button onClick={() => handleViewItem(q, 'query')} style={{ color: '#000', background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)', border: 'none', cursor: 'pointer', fontWeight: '800', padding: '8px 16px', borderRadius: '8px', fontSize: '0.75rem' }}>Initiate Contact</button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="6" style={{ ...tdStyle, textAlign: 'center', color: '#94a3b8', padding: '40px' }}>
+                                                No leads found matching your criteria.
                                             </td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
                         </div>
