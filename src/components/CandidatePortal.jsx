@@ -166,7 +166,7 @@ const CandidatePortal = () => {
                         zIndex: 2,
                         background: 'rgba(255, 255, 255, 0.05)',
                         backdropFilter: 'blur(10px)',
-                        padding: '40px',
+                        padding: 'clamp(20px, 5vw, 40px)',
                         borderRadius: '20px',
                         border: '1px solid rgba(255, 255, 255, 0.1)',
                         width: '100%',
@@ -185,7 +185,7 @@ const CandidatePortal = () => {
 
                     <form onSubmit={authMode === 'signup' ? handleSignup : handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         {authMode === 'signup' && (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px' }}>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Full Name *</label>
                                     <input
@@ -349,7 +349,7 @@ const CandidatePortal = () => {
                         )}
 
                         {authMode === 'signup' && (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px' }}>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Job Looking For *</label>
                                     <div style={{ position: 'relative' }}>
@@ -411,7 +411,7 @@ const CandidatePortal = () => {
                         )}
 
                         {authMode === 'signup' && formData.experienceLevel === 'Experienced' && (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '20px' }}>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Years of Experience *</label>
                                     <input
@@ -462,7 +462,7 @@ const CandidatePortal = () => {
                         </div>
 
                         {authMode === 'signup' && (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px' }}>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>LinkedIn Profile</label>
                                     <input
