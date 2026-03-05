@@ -741,6 +741,9 @@ const Admin = ({ currentUser }) => {
         } else if (type === 'meeting') {
             const m = meetings.find(m => m.id == id);
             if (m) await AdminService.updateMeeting({ ...m, status });
+        } else if (type === 'chat_transcript') {
+            const cl = chatLogs.find(l => l.id == id);
+            if (cl) await AdminService.updateChatLogStatus(id, status);
         }
 
         await refreshData();
@@ -4302,6 +4305,13 @@ const Admin = ({ currentUser }) => {
                                                         </div>
                                                     )}
 
+                                                    {modalType === 'chat_transcript' && (
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '10px', fontSize: '1rem', color: '#f8fafc' }}>
+                                                            <span style={{ color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', fontSize: '0.8rem' }}>Contact / Endpoint:</span>
+                                                            <span style={{ fontWeight: '500' }}>{selectedItem.formData?.email || selectedItem.formData?.phone || 'Not Provided'}</span>
+                                                        </div>
+                                                    )}
+
                                                     <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '10px', fontSize: '1rem', color: '#f8fafc' }}>
                                                         <span style={{ color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', fontSize: '0.8rem' }}>Timestamp:</span>
                                                         <span style={{ fontWeight: '500' }}>{selectedItem.date || selectedItem.appliedDate} {selectedItem.time && `at ${selectedItem.time}`}</span>
@@ -4430,7 +4440,7 @@ const Admin = ({ currentUser }) => {
                                                     )}
 
                                                     {/* Status Selector & Actions */}
-                                                    {['application', 'query', 'meeting'].includes(modalType) && (
+                                                    {['application', 'query', 'meeting', 'chat_transcript'].includes(modalType) && (
                                                         <div style={{ marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
                                                             <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr auto', gap: '15px', fontSize: '1rem', color: '#f8fafc', alignItems: 'center' }}>
                                                                 <span style={{ color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', fontSize: '0.8rem' }}>Update Status:</span>
@@ -4476,6 +4486,14 @@ const Admin = ({ currentUser }) => {
                                                                             <option value="Completed" style={{ background: '#1a1a1a', color: '#fff' }}>Completed</option>
                                                                             <option value="Cancelled" style={{ background: '#1a1a1a', color: '#fff' }}>Cancelled</option>
                                                                             <option value="Pending" style={{ background: '#1a1a1a', color: '#fff' }}>Pending</option>
+                                                                        </>
+                                                                    )}
+                                                                    {modalType === 'chat_transcript' && (
+                                                                        <>
+                                                                            <option value="New" style={{ background: '#1a1a1a', color: '#fff' }}>New</option>
+                                                                            <option value="Active" style={{ background: '#1a1a1a', color: '#fff' }}>Active</option>
+                                                                            <option value="Ended" style={{ background: '#1a1a1a', color: '#fff' }}>Ended</option>
+                                                                            <option value="Closed" style={{ background: '#1a1a1a', color: '#fff' }}>Closed</option>
                                                                         </>
                                                                     )}
                                                                 </select>

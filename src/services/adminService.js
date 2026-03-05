@@ -3111,6 +3111,31 @@ const AdminService = {
             return fallbackLog;
         }
     },
+
+    updateChatLogStatus: async (id, status) => {
+        try {
+            const { error } = await supabase
+                .from('gt_chat_logs')
+                .update({ status })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            // Sync local storage fallback
+            const logs = await AdminService.getChatLogs();
+            const updatedLogs = logs.map(l => l.id === id ? { ...l, status } : l);
+            AdminService._saveData('gt_chat_logs', updatedLogs);
+
+            return { success: true };
+        } catch (error) {
+            console.error('updateChatLogStatus fallback to local:', error);
+            const logs = await AdminService.getChatLogs();
+            const updatedLogs = logs.map(l => l.id === id ? { ...l, status } : l);
+            AdminService._saveData('gt_chat_logs', updatedLogs);
+            return { success: true, localOnly: true };
+        }
+    },
+
     // --- Blogs ---
     getBlogs: async () => {
         try {
