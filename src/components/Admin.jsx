@@ -4308,7 +4308,7 @@ const Admin = ({ currentUser }) => {
                                                     {modalType === 'chat_transcript' && (
                                                         <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '10px', fontSize: '1rem', color: '#f8fafc' }}>
                                                             <span style={{ color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', fontSize: '0.8rem' }}>Contact / Endpoint:</span>
-                                                            <span style={{ fontWeight: '500' }}>{selectedItem.formData?.email || selectedItem.formData?.phone || 'Not Provided'}</span>
+                                                            <span style={{ fontWeight: '500' }}>{[selectedItem.formData?.email, selectedItem.formData?.phone].filter(Boolean).join(' / ') || 'Not Provided'}</span>
                                                         </div>
                                                     )}
 
