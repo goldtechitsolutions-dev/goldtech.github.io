@@ -98,8 +98,16 @@ const BookingModal = () => {
             setIsBooking(true);
             const formattedTime = `${formData.timeHour}:${formData.timeMinute} ${formData.timeAmPm}`;
 
-            // Validate Date and Time
-            const selectedDateTime = new Date(`${formData.date} ${formattedTime}`);
+            // Validate Date and Time with robust parsing (cross-browser/iOS safe)
+            const [year, month, day] = formData.date.split('-').map(Number);
+            let hour = parseInt(formData.timeHour);
+            const minute = parseInt(formData.timeMinute);
+            const ampm = formData.timeAmPm;
+
+            if (ampm === 'PM' && hour < 12) hour += 12;
+            if (ampm === 'AM' && hour === 12) hour = 0;
+
+            const selectedDateTime = new Date(year, month - 1, day, hour, minute);
             const now = new Date();
 
             if (selectedDateTime < now) {

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, MessageSquare, MapPin, Phone, Send, Globe, Star, ChevronDown } from 'lucide-react';
+import { User, Mail, MessageSquare, MapPin, Phone, Send, Globe, Star, ChevronDown, Check, Info } from 'lucide-react';
 import contactBg from '../assets/im2.png';
 import AdminService from '../services/adminService';
 import { countryCodes } from '../utils/countryData';
